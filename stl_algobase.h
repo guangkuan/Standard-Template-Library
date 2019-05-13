@@ -318,11 +318,7 @@ inline _BidirectionalIter2 __copy_backward(_BidirectionalIter1 __first,
 }
 
 template <class _RandomAccessIter, class _BidirectionalIter, class _Distance>
-inline _BidirectionalIter __copy_backward(_RandomAccessIter __first, 
-                                          _RandomAccessIter __last, 
-                                          _BidirectionalIter __result,
-                                          random_access_iterator_tag,
-                                          _Distance*)
+inline _BidirectionalIter __copy_backward(_RandomAccessIter __first, _RandomAccessIter __last, _BidirectionalIter __result, random_access_iterator_tag, _Distance*)
 {
   for (_Distance __n = __last - __first; __n > 0; --__n)
     *--__result = *--__last;
@@ -387,10 +383,9 @@ inline _BI2 copy_backward(_BI1 __first, _BI1 __last, _BI2 __result) {
 #else /* __STL_CLASS_PARTIAL_SPECIALIZATION */
 
 template <class _BI1, class _BI2>
-inline _BI2 copy_backward(_BI1 __first, _BI1 __last, _BI2 __result) {
-  return __copy_backward(__first, __last, __result,
-                         __ITERATOR_CATEGORY(__first),
-                         __DISTANCE_TYPE(__first));
+inline _BI2 copy_backward(_BI1 __first, _BI1 __last, _BI2 __result) 
+{
+  return __copy_backward(__first, __last, __result, __ITERATOR_CATEGORY(__first), __DISTANCE_TYPE(__first));
 }
 
 #endif /* __STL_CLASS_PARTIAL_SPECIALIZATION */
@@ -467,7 +462,8 @@ inline void fill(signed char* __first, signed char* __last,
   memset(__first, static_cast<unsigned char>(__tmp), __last - __first);
 }
 
-inline void fill(char* __first, char* __last, const char& __c) {
+inline void fill(char* __first, char* __last, const char& __c) 
+{
   char __tmp = __c;
   memset(__first, static_cast<unsigned char>(__tmp), __last - __first);
 }

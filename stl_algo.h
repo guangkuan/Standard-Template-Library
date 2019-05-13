@@ -94,9 +94,7 @@ _Function for_each(_InputIter __first, _InputIter __last, _Function __f) {
 // find and find_if.
 
 template <class _InputIter, class _Tp>
-inline _InputIter find(_InputIter __first, _InputIter __last,
-                       const _Tp& __val,
-                       input_iterator_tag)
+inline _InputIter find(_InputIter __first, _InputIter __last, const _Tp& __val, input_iterator_tag)
 {
   while (__first != __last && !(*__first == __val))
     ++__first;
