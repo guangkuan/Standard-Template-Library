@@ -40,6 +40,10 @@ __STL_BEGIN_NAMESPACE
 #pragma set woff 1375
 #endif
 
+/*相较于vector的连续线性空间，list就显得复杂许多，它的好处是每次插入或删除一个元素，就配置或释放一个元素空间。
+因此，list对于空间的运用有绝对的精准，一点也不浪费。而且，对于任何位置的元素插入或者元素移除，list永远是常数。
+list插入(insert)和接合操作(splice)都不会造成原有的list迭代器失效。而vector的插入操作可能会在空间不足时做重新配置、数据移动的操作。
+*/
 struct _List_node_base {
   _List_node_base* _M_next;
   _List_node_base* _M_prev;
@@ -55,6 +59,7 @@ struct _List_iterator_base {
   typedef ptrdiff_t                  difference_type;
   typedef bidirectional_iterator_tag iterator_category;
 
+  //迭代器内部要有一个普通指针，指向list的节点
   _List_node_base* _M_node;
 
   _List_iterator_base(_List_node_base* __x) : _M_node(__x) {}
@@ -96,15 +101,18 @@ struct _List_iterator : public _List_iterator_base {
     this->_M_incr();
     return *this;
   }
+  //后置版本
   _Self operator++(int) { 
     _Self __tmp = *this;
     this->_M_incr();
     return __tmp;
   }
+
   _Self& operator--() { 
     this->_M_decr();
     return *this;
   }
+  //后置版本
   _Self operator--(int) { 
     _Self __tmp = *this;
     this->_M_decr();
@@ -221,12 +229,14 @@ public:
   typedef _Alloc allocator_type;
   allocator_type get_allocator() const { return allocator_type(); }
 
-  _List_base(const allocator_type&) {
+  _List_base(const allocator_type&) 
+  {
     _M_node = _M_get_node();
     _M_node->_M_next = _M_node;
     _M_node->_M_prev = _M_node;
   }
-  ~_List_base() {
+  ~_List_base() 
+  {
     clear();
     _M_put_node(_M_node);
   }
@@ -234,27 +244,32 @@ public:
   void clear();
 
 protected:
+  //专属空间配置器，每次配置一个节点大小，更方便地以节点大小为配置单位
+  //迭代器移动，list链表不移动，用迭代器遍历链表
   typedef simple_alloc<_List_node<_Tp>, _Alloc> _Alloc_type;
   _List_node<_Tp>* _M_get_node() { return _Alloc_type::allocate(1); }
   void _M_put_node(_List_node<_Tp>* __p) { _Alloc_type::deallocate(__p, 1); } 
 
 protected:
+  //_M_node指向刻意置于尾端的一个空白节点，_M_node便能符合STL对于“前闭后开”的要求，成为last迭代器。
   _List_node<_Tp>* _M_node;
 };
 
 #endif /* __STL_USE_STD_ALLOCATORS */
 
 template <class _Tp, class _Alloc>
-void 
-_List_base<_Tp,_Alloc>::clear() 
+void _List_base<_Tp,_Alloc>::clear() 
 {
+  //cur指向尾端的下一个节点即首节点
   _List_node<_Tp>* __cur = (_List_node<_Tp>*) _M_node->_M_next;
-  while (__cur != _M_node) {
+  while (__cur != _M_node) 
+  {
     _List_node<_Tp>* __tmp = __cur;
     __cur = (_List_node<_Tp>*) __cur->_M_next;
     _Destroy(&__tmp->_M_data);
     _M_put_node(__tmp);
   }
+  //恢复_M_node的原始状态。
   _M_node->_M_next = _M_node;
   _M_node->_M_prev = _M_node;
 }
@@ -306,10 +321,12 @@ protected:
 #endif /* __STL_HAS_NAMESPACES */
 
 protected:
+  //产生（配置并构造）一个节点，带有元素值
   _Node* _M_create_node(const _Tp& __x)
   {
     _Node* __p = _M_get_node();
-    __STL_TRY {
+    __STL_TRY 
+    {
       _Construct(&__p->_M_data, __x);
     }
     __STL_UNWIND(_M_put_node(__p));
@@ -360,12 +377,16 @@ public:
 
   void swap(list<_Tp, _Alloc>& __x) { __STD::swap(_M_node, __x._M_node); }
 
-  iterator insert(iterator __position, const _Tp& __x) {
+  iterator insert(iterator __position, const _Tp& __x) 
+  {
     _Node* __tmp = _M_create_node(__x);
+    //调整list链表，修改插入节点的指向，插入的节点的上一个节点指向插入位置的上一个节点，插入的节点的下一个节点指向插入位置。
     __tmp->_M_next = __position._M_node;
     __tmp->_M_prev = __position._M_node->_M_prev;
+    //因为新插入了节点，因此需要调整插入位置上的一个节点（的下一个节点）和插入位置的节点（的上一个节点）的指向。
     __position._M_node->_M_prev->_M_next = __tmp;
     __position._M_node->_M_prev = __tmp;
+    //返回插入新节点的位置。
     return __tmp;
   }
   iterator insert(iterator __position) { return insert(__position, _Tp()); }
@@ -403,7 +424,8 @@ public:
   void push_back(const _Tp& __x) { insert(end(), __x); }
   void push_back() {insert(end());}
 
-  iterator erase(iterator __position) {
+  iterator erase(iterator __position) 
+  {
     _List_node_base* __next_node = __position._M_node->_M_next;
     _List_node_base* __prev_node = __position._M_node->_M_prev;
     _Node* __n = (_Node*) __position._M_node;
@@ -490,8 +512,11 @@ public:
 #endif /* __STL_MEMBER_TEMPLATES */
 
 protected:
-  void transfer(iterator __position, iterator __first, iterator __last) {
-    if (__position != __last) {
+  //transfer不是公开接口，splice、merge、reverse、sort是。
+  void transfer(iterator __position, iterator __first, iterator __last) 
+  {
+    if (__position != __last) 
+    {
       // Remove [first, last) from its old position.
       __last._M_node->_M_prev->_M_next     = __position._M_node;
       __first._M_node->_M_prev->_M_next    = __last._M_node;
@@ -506,17 +531,21 @@ protected:
   }
 
 public:
-  void splice(iterator __position, list& __x) {
+  void splice(iterator __position, list& __x) 
+  {
     if (!__x.empty()) 
       this->transfer(__position, __x.begin(), __x.end());
   }
-  void splice(iterator __position, list&, iterator __i) {
+  void splice(iterator __position, list&, iterator __i) 
+  {
     iterator __j = __i;
     ++__j;
-    if (__position == __i || __position == __j) return;
+    if (__position == __i || __position == __j) 
+      return;
     this->transfer(__position, __i, __j);
   }
-  void splice(iterator __position, list&, iterator __first, iterator __last) {
+  void splice(iterator __position, list&, iterator __first, iterator __last) 
+  {
     if (__first != __last) 
       this->transfer(__position, __first, __last);
   }
@@ -707,19 +736,23 @@ list<_Tp, _Alloc>::_M_assign_dispatch(_InputIter __first2, _InputIter __last2,
 
 #endif /* __STL_MEMBER_TEMPLATES */
 
+//将数值为value的所有元素移除
 template <class _Tp, class _Alloc>
 void list<_Tp, _Alloc>::remove(const _Tp& __value)
 {
   iterator __first = begin();
   iterator __last = end();
-  while (__first != __last) {
+  while (__first != __last) 
+  {
     iterator __next = __first;
     ++__next;
-    if (*__first == __value) erase(__first);
+    if (*__first == __value) 
+      erase(__first);
     __first = __next;
   }
 }
 
+//移除数值相同的连续元素。只有“连续而相同的元素”，才会被移除剩一个。
 template <class _Tp, class _Alloc>
 void list<_Tp, _Alloc>::unique()
 {
@@ -727,7 +760,8 @@ void list<_Tp, _Alloc>::unique()
   iterator __last = end();
   if (__first == __last) return;
   iterator __next = __first;
-  while (++__next != __last) {
+  while (++__next != __last) 
+  {
     if (*__first == *__next)
       erase(__next);
     else
@@ -736,6 +770,7 @@ void list<_Tp, _Alloc>::unique()
   }
 }
 
+//merge将__x合并到*this上，两个lists的内容都必须先经过递增排序。
 template <class _Tp, class _Alloc>
 void list<_Tp, _Alloc>::merge(list<_Tp, _Alloc>& __x)
 {
@@ -744,16 +779,20 @@ void list<_Tp, _Alloc>::merge(list<_Tp, _Alloc>& __x)
   iterator __first2 = __x.begin();
   iterator __last2 = __x.end();
   while (__first1 != __last1 && __first2 != __last2)
-    if (*__first2 < *__first1) {
+    if (*__first2 < *__first1) 
+    {
       iterator __next = __first2;
       transfer(__first1, __first2, ++__next);
       __first2 = __next;
     }
     else
       ++__first1;
-  if (__first2 != __last2) transfer(__last1, __first2, __last2);
+  if (__first2 != __last2) 
+    transfer(__last1, __first2, __last2);
 }
 
+//两种方法。
+//令一种，从第二个节点开始调用transfer，移动当前节点到最前端。
 inline void __List_base_reverse(_List_node_base* __p)
 {
   _List_node_base* __tmp = __p;
@@ -773,23 +812,30 @@ template <class _Tp, class _Alloc>
 void list<_Tp, _Alloc>::sort()
 {
   // Do nothing if the list has length 0 or 1.
-  if (_M_node->_M_next != _M_node && _M_node->_M_next->_M_next != _M_node) {
+  if (_M_node->_M_next != _M_node && _M_node->_M_next->_M_next != _M_node) 
+  {
     list<_Tp, _Alloc> __carry;
     list<_Tp, _Alloc> __counter[64];
     int __fill = 0;
-    while (!empty()) {
+    while (!empty()) 
+    {
+      //void splice(iterator __position, list&, iterator __i) 
+      //每次取list首位，用merge进行排序，把当前首位排到合适位置，然后把merge后的list存入counter数组的下一位
       __carry.splice(__carry.begin(), *this, begin());
       int __i = 0;
-      while(__i < __fill && !__counter[__i].empty()) {
+      while(__i < __fill && !__counter[__i].empty()) 
+      {
         __counter[__i].merge(__carry);
         __carry.swap(__counter[__i++]);
       }
       __carry.swap(__counter[__i]);         
-      if (__i == __fill) ++__fill;
+      if (__i == __fill) 
+        ++__fill;
     } 
 
     for (int __i = 1; __i < __fill; ++__i)
       __counter[__i].merge(__counter[__i-1]);
+    //__counter[__fill-1]是排好序的list
     swap(__counter[__fill-1]);
   }
 }
