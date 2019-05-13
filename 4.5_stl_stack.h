@@ -37,9 +37,8 @@ __STL_BEGIN_NAMESPACE
 
 // Forward declarations of operators == and <, needed for friend declaration.
 
-template <class _Tp, 
-          class _Sequence __STL_DEPENDENT_DEFAULT_TMPL(deque<_Tp>) >
-class stack;
+//默认用deque作底部容器
+template <class _Tp, class _Sequence __STL_DEPENDENT_DEFAULT_TMPL(deque<_Tp>) > class stack;
 
 template <class _Tp, class _Seq>
 bool operator==(const stack<_Tp,_Seq>& __x, const stack<_Tp,_Seq>& __y);
@@ -47,7 +46,11 @@ bool operator==(const stack<_Tp,_Seq>& __x, const stack<_Tp,_Seq>& __y);
 template <class _Tp, class _Seq>
 bool operator<(const stack<_Tp,_Seq>& __x, const stack<_Tp,_Seq>& __y);
 
-
+/*
+//stack是一种先进后出(First In Last Out, FILO)的数据结构。
+//允许新增元素、移除元素、取得最顶端元素。但除了最顶端外、没有任何其他方法可以存取stack的其他元素。
+//stack不允许有遍历行为
+*/
 template <class _Tp, class _Sequence>
 class stack {
 
@@ -81,6 +84,8 @@ public:
   typedef typename _Sequence::reference       reference;
   typedef typename _Sequence::const_reference const_reference;
 protected:
+  //deque是双向开口的数据结构，若以deque为底部结构并封闭其头端开口，便轻而易举的形成了一个stack。
+  //具有这种“修改某物接口，形成另一种风貌”的性质者，称为adapter（配接器）
   _Sequence c;
 public:
   stack() : c() {}
