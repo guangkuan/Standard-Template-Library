@@ -37,9 +37,8 @@ __STL_BEGIN_NAMESPACE
 
 // Forward declarations of operators < and ==, needed for friend declaration.
 
-template <class _Tp, 
-          class _Sequence __STL_DEPENDENT_DEFAULT_TMPL(deque<_Tp>) >
-class queue;
+//以deque为默认底部结构
+template <class _Tp, class _Sequence __STL_DEPENDENT_DEFAULT_TMPL(deque<_Tp>) > class queue;
 
 template <class _Tp, class _Seq>
 inline bool operator==(const queue<_Tp, _Seq>&, const queue<_Tp, _Seq>&);
@@ -47,7 +46,14 @@ inline bool operator==(const queue<_Tp, _Seq>&, const queue<_Tp, _Seq>&);
 template <class _Tp, class _Seq>
 inline bool operator<(const queue<_Tp, _Seq>&, const queue<_Tp, _Seq>&);
 
-
+/*
+//queue是一种先进先出(First In First Out, FIFO)的数据结构。
+//它有两个出口。queue允许新增元素、移除元素、从最底端加入元素、取得最顶端元素。
+//除了最底端可以加入、最顶端可以取出外，没有任何其它办法可以存取queue的其它元素。
+//queue所有元素的进出都必须符合“先进先出”的条件，只有queue顶端元素，才有机会被外界取用。
+//queue不提供遍历功能，也不提供迭代器。
+//queue也是一种适配器
+*/
 template <class _Tp, class _Sequence>
 class queue {
 
