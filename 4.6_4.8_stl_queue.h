@@ -32,6 +32,7 @@
 #define __SGI_STL_INTERNAL_QUEUE_H
 
 #include <sequence_concepts.h>
+#include <vector>
 
 __STL_BEGIN_NAMESPACE
 
@@ -148,11 +149,13 @@ operator>=(const queue<_Tp, _Sequence>& __x, const queue<_Tp, _Sequence>& __y)
 }
 
 #endif /* __STL_FUNCTION_TMPL_PARTIAL_ORDER */
-
-template <class _Tp, 
-          class _Sequence __STL_DEPENDENT_DEFAULT_TMPL(vector<_Tp>),
-          class _Compare
-          __STL_DEPENDENT_DEFAULT_TMPL(less<typename _Sequence::value_type>) >
+/*
+//priority_queue是一个拥有权值观念的queue（自动依照元素的权值排列（通常权值以实值表示））。权值最高者，排在最前面。
+//它允许加入新元素，移除旧元素、审视元素值等功能。
+//由于这是一个queue，所以只允许在底端加入元素，并从顶端取出元素，除此之外别无其他存取元素的途径。
+//默认情况priority_queue利用一个max-heap完成。因此它也是一个适配器。
+*/
+template <class _Tp, class _Sequence __STL_DEPENDENT_DEFAULT_TMPL(std::vector<_Tp>), class _Compare __STL_DEPENDENT_DEFAULT_TMPL(less<typename _Sequence::value_type>) >
 class priority_queue {
 
   // requirements:
@@ -172,14 +175,13 @@ public:
   typedef typename _Sequence::reference       reference;
   typedef typename _Sequence::const_reference const_reference;
 protected:
+  //底层容器vector
   _Sequence c;
   _Compare comp;
 public:
   priority_queue() : c() {}
   explicit priority_queue(const _Compare& __x) :  c(), comp(__x) {}
-  priority_queue(const _Compare& __x, const _Sequence& __s) 
-    : c(__s), comp(__x) 
-    { make_heap(c.begin(), c.end(), comp); }
+  priority_queue(const _Compare& __x, const _Sequence& __s) : c(__s), comp(__x) { make_heap(c.begin(), c.end(), comp); }
 
 #ifdef __STL_MEMBER_TEMPLATES
   template <class _InputIterator>
@@ -222,15 +224,21 @@ public:
   bool empty() const { return c.empty(); }
   size_type size() const { return c.size(); }
   const_reference top() const { return c.front(); }
-  void push(const value_type& __x) {
-    __STL_TRY {
+  void push(const value_type& __x) 
+  {
+    __STL_TRY 
+    {
+      //push_heap是泛型算法，先利用底层容器的push_back()将新元素推入尾端，再重排heap。
       c.push_back(__x); 
       push_heap(c.begin(), c.end(), comp);
     }
     __STL_UNWIND(c.clear());
   }
-  void pop() {
-    __STL_TRY {
+  void pop() 
+  {
+    __STL_TRY 
+    {
+      //pop_heap是泛型算法，先重排heap，再利用底层容器的pop_back()取得尾端被弹出的元素。
       pop_heap(c.begin(), c.end(), comp);
       c.pop_back();
     }
