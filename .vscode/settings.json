@@ -1,5 +1,8 @@
 {
     "files.associations": {
-        "exception": "cpp"
+        "exception": "cpp",
+        "initializer_list": "cpp",
+        "type_traits": "cpp",
+        "xtr1common": "cpp"
     }
 }

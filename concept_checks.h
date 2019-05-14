@@ -48,6 +48,11 @@
 
 // Some compilers lack the features that are necessary for concept checks.
 // On those compilers we define the concept check macros to do nothing.
+/*
+//1>独立作用域，语法单元，不会和上下文混淆
+//2>没有分号的问题
+//3>循环实际上不执行，且大多数编译器都会做优化，不会影响程序性能。
+*/
 #define __STL_REQUIRES(__type_var, __concept) do {} while(0)
 #define __STL_CLASS_REQUIRES(__type_var, __concept) \
   static int  __##__type_var##_##__concept
