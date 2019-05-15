@@ -28,14 +28,14 @@ __STL_BEGIN_NAMESPACE
 #pragma set woff 1375
 #endif
 
+//单向链表的节点基本结构
 struct _Slist_node_base
 {
   _Slist_node_base* _M_next;
 };
 
-inline _Slist_node_base*
-__slist_make_link(_Slist_node_base* __prev_node,
-                  _Slist_node_base* __new_node)
+//已知某一节点，插入新节点于其后
+inline _Slist_node_base* __slist_make_link(_Slist_node_base* __prev_node, _Slist_node_base* __new_node)
 {
   __new_node->_M_next = __prev_node->_M_next;
   __prev_node->_M_next = __new_node;
@@ -99,6 +99,7 @@ inline _Slist_node_base* __slist_reverse(_Slist_node_base* __node)
   return __result;
 }
 
+//单向链表的大小（元素个数）
 inline size_t __slist_size(_Slist_node_base* __node)
 {
   size_t __result = 0;
@@ -107,24 +108,29 @@ inline size_t __slist_size(_Slist_node_base* __node)
   return __result;
 }
 
+//单向链表的节点结构
 template <class _Tp>
 struct _Slist_node : public _Slist_node_base
 {
   _Tp _M_data;
 };
 
+//单向链表的迭代器基本结构
 struct _Slist_iterator_base
 {
   typedef size_t               size_type;
   typedef ptrdiff_t            difference_type;
+  //单向
   typedef forward_iterator_tag iterator_category;
 
+  //指向节点基本结构
   _Slist_node_base* _M_node;
 
   _Slist_iterator_base(_Slist_node_base* __x) : _M_node(__x) {}
   void _M_incr() { _M_node = _M_node->_M_next; }
 
-  bool operator==(const _Slist_iterator_base& __x) const {
+  bool operator==(const _Slist_iterator_base& __x) const 
+  {
     return _M_node == __x._M_node;
   }
   bool operator!=(const _Slist_iterator_base& __x) const {
@@ -290,6 +296,7 @@ protected:
   _Slist_node_base* _M_erase_after(_Slist_node_base*, _Slist_node_base*);
 
 protected:
+  //头部。注意，它不是指针，是实物。
   _Slist_node_base _M_head;
 };  
 
@@ -339,9 +346,13 @@ private:
   typedef _Slist_node_base      _Node_base;
   typedef _Slist_iterator_base  _Iterator_base;
 
-  _Node* _M_create_node(const value_type& __x) {
+  _Node* _M_create_node(const value_type& __x) 
+  {
+    //配置空间
     _Node* __node = this->_M_get_node();
-    __STL_TRY {
+    __STL_TRY 
+    {
+      //构造元素
       construct(&__node->_M_data, __x);
       __node->_M_next = 0;
     }
@@ -426,9 +437,10 @@ public:
 public:
 
   iterator begin() { return iterator((_Node*)this->_M_head._M_next); }
-  const_iterator begin() const 
-    { return const_iterator((_Node*)this->_M_head._M_next);}
+  //head后的元素
+  const_iterator begin() const { return const_iterator((_Node*)this->_M_head._M_next);}
 
+  //end()并不是链表尾端的next，而是独立的，虽然尾端->next = 0。
   iterator end() { return iterator(0); }
   const_iterator end() const { return const_iterator(0); }
 
@@ -457,11 +469,16 @@ public:
   reference front() { return ((_Node*) this->_M_head._M_next)->_M_data; }
   const_reference front() const 
     { return ((_Node*) this->_M_head._M_next)->_M_data; }
-  void push_front(const value_type& __x)   {
+  //从头部插入元素（新元素称为slist的第一个元素）
+  void push_front(const value_type& __x)   
+  {
     __slist_make_link(&this->_M_head, _M_create_node(__x));
   }
   void push_front() { __slist_make_link(&this->_M_head, _M_create_node()); }
-  void pop_front() {
+
+  //从头部删除元素，修改head
+  void pop_front() 
+  {
     _Node* __node = (_Node*) this->_M_head._M_next;
     this->_M_head._M_next = __node->_M_next;
     destroy(&__node->_M_data);
