@@ -38,7 +38,9 @@ struct pair {
   typedef _T1 first_type;
   typedef _T2 second_type;
 
+  //pair的第一个元素被视为键值
   _T1 first;
+  //pair的第二个元素被视为实值
   _T2 second;
   pair() : first(_T1()), second(_T2()) {}
   pair(const _T1& __a, const _T2& __b) : first(__a), second(__b) {}
@@ -55,11 +57,11 @@ inline bool operator==(const pair<_T1, _T2>& __x, const pair<_T1, _T2>& __y)
   return __x.first == __y.first && __x.second == __y.second; 
 }
 
+//pair的比较规则
 template <class _T1, class _T2>
 inline bool operator<(const pair<_T1, _T2>& __x, const pair<_T1, _T2>& __y)
 { 
-  return __x.first < __y.first || 
-         (!(__y.first < __x.first) && __x.second < __y.second); 
+  return __x.first < __y.first || (!(__y.first < __x.first) && __x.second < __y.second); 
 }
 
 #ifdef __STL_FUNCTION_TMPL_PARTIAL_ORDER

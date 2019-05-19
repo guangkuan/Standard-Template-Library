@@ -1273,11 +1273,9 @@ _Rb_tree<_Key,_Value,_KeyOfValue,_Compare,_Alloc>
   return __n;
 }
 
-template <class _Key, class _Value, class _KeyOfValue, 
-          class _Compare, class _Alloc>
+template <class _Key, class _Value, class _KeyOfValue, class _Compare, class _Alloc>
 typename _Rb_tree<_Key,_Value,_KeyOfValue,_Compare,_Alloc>::iterator 
-_Rb_tree<_Key,_Value,_KeyOfValue,_Compare,_Alloc>
-  ::lower_bound(const _Key& __k)
+_Rb_tree<_Key,_Value,_KeyOfValue,_Compare,_Alloc>::lower_bound(const _Key& __k)
 {
   _Link_type __y = _M_header; /* Last node which is not less than __k. */
   _Link_type __x = _M_root(); /* Current node. */

@@ -41,10 +41,8 @@ __STL_BEGIN_NAMESPACE
 #endif
 
 // Forward declarations of operators == and <, needed for friend declarations.
-template <class _Key, class _Tp, 
-          class _Compare __STL_DEPENDENT_DEFAULT_TMPL(less<_Key>),
-          class _Alloc = __STL_DEFAULT_ALLOCATOR(_Tp) >
-class map;
+// 默认采用递增排序
+template <class _Key, class _Tp, class _Compare __STL_DEPENDENT_DEFAULT_TMPL(less<_Key>), class _Alloc = __STL_DEFAULT_ALLOCATOR(_Tp) > class map;
 
 template <class _Key, class _Tp, class _Compare, class _Alloc>
 inline bool operator==(const map<_Key,_Tp,_Compare,_Alloc>& __x, 
@@ -65,33 +63,36 @@ public:
 
 // typedefs:
 
+  //键值型别
   typedef _Key                  key_type;
+  //数据（实值）型别
   typedef _Tp                   data_type;
   typedef _Tp                   mapped_type;
+  //map的所有元素都是pair，同时拥有实值(value)和键值(key)。
   typedef pair<const _Key, _Tp> value_type;
+  //键值比较函数
   typedef _Compare              key_compare;
     
-  class value_compare
-    : public binary_function<value_type, value_type, bool> {
+  //定义一个functor，其作用就是调用“元素比较函数”
+  class value_compare : public binary_function<value_type, value_type, bool> {
   friend class map<_Key,_Tp,_Compare,_Alloc>;
   protected :
     _Compare comp;
     value_compare(_Compare __c) : comp(__c) {}
   public:
-    bool operator()(const value_type& __x, const value_type& __y) const {
-      return comp(__x.first, __y.first);
-    }
+    bool operator()(const value_type& __x, const value_type& __y) const { return comp(__x.first, __y.first); }
   };
 
 private:
-  typedef _Rb_tree<key_type, value_type, 
-                   _Select1st<value_type>, key_compare, _Alloc> _Rep_type;
+  //以下定义表述型别(representation type)。以map元素型别（一个pair）的第一型别，作为RB-tree节点的键值型别。
+  typedef _Rb_tree<key_type, value_type, _Select1st<value_type>, key_compare, _Alloc> _Rep_type;
   _Rep_type _M_t;  // red-black tree representing map
 public:
   typedef typename _Rep_type::pointer pointer;
   typedef typename _Rep_type::const_pointer const_pointer;
   typedef typename _Rep_type::reference reference;
   typedef typename _Rep_type::const_reference const_reference;
+  //map并不像set一样将iterator定义为RB-tree的const_iterator。因为它允许用户通过迭代器修改元素的实值(value)。
   typedef typename _Rep_type::iterator iterator;
   typedef typename _Rep_type::const_iterator const_iterator;
   typedef typename _Rep_type::reverse_iterator reverse_iterator;
@@ -118,28 +119,20 @@ public:
       const allocator_type& __a = allocator_type())
     : _M_t(__comp, __a) { _M_t.insert_unique(__first, __last); }
 #else
-  map(const value_type* __first, const value_type* __last)
-    : _M_t(_Compare(), allocator_type())
+  //map一定要使用叠层RB-tree的insert_unique()而非insert_equal()，因为map不允许相同键值存在。
+  map(const value_type* __first, const value_type* __last) : _M_t(_Compare(), allocator_type()) { _M_t.insert_unique(__first, __last); }
+
+  map(const value_type* __first, const value_type* __last, const _Compare& __comp, const allocator_type& __a = allocator_type()) : _M_t(__comp, __a) { _M_t.insert_unique(__first, __last); }
+
+  map(const_iterator __first, const_iterator __last) : _M_t(_Compare(), allocator_type()) 
     { _M_t.insert_unique(__first, __last); }
 
-  map(const value_type* __first,
-      const value_type* __last, const _Compare& __comp,
-      const allocator_type& __a = allocator_type())
-    : _M_t(__comp, __a) { _M_t.insert_unique(__first, __last); }
-
-  map(const_iterator __first, const_iterator __last)
-    : _M_t(_Compare(), allocator_type()) 
-    { _M_t.insert_unique(__first, __last); }
-
-  map(const_iterator __first, const_iterator __last, const _Compare& __comp,
-      const allocator_type& __a = allocator_type())
-    : _M_t(__comp, __a) { _M_t.insert_unique(__first, __last); }
+  map(const_iterator __first, const_iterator __last, const _Compare& __comp, const allocator_type& __a = allocator_type()) : _M_t(__comp, __a) { _M_t.insert_unique(__first, __last); }
 
 #endif /* __STL_MEMBER_TEMPLATES */
 
   map(const map<_Key,_Tp,_Compare,_Alloc>& __x) : _M_t(__x._M_t) {}
-  map<_Key,_Tp,_Compare,_Alloc>&
-  operator=(const map<_Key, _Tp, _Compare, _Alloc>& __x)
+  map<_Key,_Tp,_Compare,_Alloc>& operator=(const map<_Key, _Tp, _Compare, _Alloc>& __x)
   {
     _M_t = __x._M_t;
     return *this; 
@@ -147,6 +140,7 @@ public:
 
   // accessors:
 
+  //一下map操作行为，RB-tree都已提供，map只要调用即可。
   key_compare key_comp() const { return _M_t.key_comp(); }
   value_compare value_comp() const { return value_compare(_M_t.key_comp()); }
   allocator_type get_allocator() const { return _M_t.get_allocator(); }
@@ -162,9 +156,11 @@ public:
   bool empty() const { return _M_t.empty(); }
   size_type size() const { return _M_t.size(); }
   size_type max_size() const { return _M_t.max_size(); }
-  _Tp& operator[](const key_type& __k) {
+  _Tp& operator[](const key_type& __k) 
+  {
     iterator __i = lower_bound(__k);
     // __i->first is greater than or equivalent to __k.
+    //如果不存在以k为键值的键值对，就新建一个。
     if (__i == end() || key_comp()(__k, (*__i).first))
       __i = insert(__i, value_type(__k, _Tp()));
     return (*__i).second;
@@ -173,20 +169,20 @@ public:
 
   // insert/erase
 
-  pair<iterator,bool> insert(const value_type& __x) 
-    { return _M_t.insert_unique(__x); }
-  iterator insert(iterator position, const value_type& __x)
-    { return _M_t.insert_unique(position, __x); }
+  pair<iterator,bool> insert(const value_type& __x) { return _M_t.insert_unique(__x); }
+  iterator insert(iterator position, const value_type& __x) { return _M_t.insert_unique(position, __x); }
 #ifdef __STL_MEMBER_TEMPLATES
   template <class _InputIterator>
   void insert(_InputIterator __first, _InputIterator __last) {
     _M_t.insert_unique(__first, __last);
   }
 #else
-  void insert(const value_type* __first, const value_type* __last) {
+  void insert(const value_type* __first, const value_type* __last) 
+  {
     _M_t.insert_unique(__first, __last);
   }
-  void insert(const_iterator __first, const_iterator __last) {
+  void insert(const_iterator __first, const_iterator __last) 
+  {
     _M_t.insert_unique(__first, __last);
   }
 #endif /* __STL_MEMBER_TEMPLATES */
