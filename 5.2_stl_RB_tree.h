@@ -73,20 +73,28 @@ struct _Rb_tree_node_base
   typedef _Rb_tree_Color_type _Color_type;
   typedef _Rb_tree_node_base* _Base_ptr;
 
+  //节点颜色，非红即黑
   _Color_type _M_color; 
+  //RB树许多操作，必须知道父节点
   _Base_ptr _M_parent;
+  //指向左节点
   _Base_ptr _M_left;
+  //指向右节点
   _Base_ptr _M_right;
 
+  //最小值
   static _Base_ptr _S_minimum(_Base_ptr __x)
   {
-    while (__x->_M_left != 0) __x = __x->_M_left;
+    while (__x->_M_left != 0) 
+      __x = __x->_M_left;
     return __x;
   }
 
+  //最大值
   static _Base_ptr _S_maximum(_Base_ptr __x)
   {
-    while (__x->_M_right != 0) __x = __x->_M_right;
+    while (__x->_M_right != 0) 
+      __x = __x->_M_right;
     return __x;
   }
 };
@@ -95,30 +103,39 @@ template <class _Value>
 struct _Rb_tree_node : public _Rb_tree_node_base
 {
   typedef _Rb_tree_node<_Value>* _Link_type;
+  //节点值
   _Value _M_value_field;
 };
 
-
+//基层迭代器
 struct _Rb_tree_base_iterator
 {
   typedef _Rb_tree_node_base::_Base_ptr _Base_ptr;
+  //双向迭代器
   typedef bidirectional_iterator_tag iterator_category;
   typedef ptrdiff_t difference_type;
+  //用来与容器之间产生一个连接关系
   _Base_ptr _M_node;
 
   void _M_increment()
   {
-    if (_M_node->_M_right != 0) {
+    //有右子节点，就找右子树中最小的
+    if (_M_node->_M_right != 0) 
+    {
       _M_node = _M_node->_M_right;
       while (_M_node->_M_left != 0)
         _M_node = _M_node->_M_left;
     }
-    else {
+    else 
+    {
       _Base_ptr __y = _M_node->_M_parent;
-      while (_M_node == __y->_M_right) {
+      //如果当前节点是父节点的右子节点
+      while (_M_node == __y->_M_right) 
+      {
         _M_node = __y;
         __y = __y->_M_parent;
       }
+      //防止寻找根节点（且根节点无右节点）的下一个节点的情况。
       if (_M_node->_M_right != __y)
         _M_node = __y;
     }
@@ -126,18 +143,23 @@ struct _Rb_tree_base_iterator
 
   void _M_decrement()
   {
-    if (_M_node->_M_color == _S_rb_tree_red &&
-        _M_node->_M_parent->_M_parent == _M_node)
+    //有可能是header
+    if (_M_node->_M_color == _S_rb_tree_red && _M_node->_M_parent->_M_parent == _M_node)
       _M_node = _M_node->_M_right;
-    else if (_M_node->_M_left != 0) {
+    //有左子节点，就找左子树中最大的
+    else if (_M_node->_M_left != 0) 
+    {
       _Base_ptr __y = _M_node->_M_left;
       while (__y->_M_right != 0)
         __y = __y->_M_right;
       _M_node = __y;
     }
-    else {
+    else 
+    {
       _Base_ptr __y = _M_node->_M_parent;
-      while (_M_node == __y->_M_left) {
+      //如果当前节点是父节点的左子节点
+      while (_M_node == __y->_M_left) 
+      {
         _M_node = __y;
         __y = __y->_M_parent;
       }
@@ -213,32 +235,53 @@ inline _Value* value_type(const _Rb_tree_iterator<_Value, _Ref, _Ptr>&) {
 
 #endif /* __STL_CLASS_PARTIAL_SPECIALIZATION */
 
-inline void 
-_Rb_tree_rotate_left(_Rb_tree_node_base* __x, _Rb_tree_node_base*& __root)
+/* 
+     x             y
+    / \           / \
+       y   ==>   x
+      / \       / \
+     z             z
+*/
+
+//x为旋转节点，y为新增节点，维护旋转节点和新增节点的三个节点指针；x的左子节点，y的右子节点不用管。
+inline void _Rb_tree_rotate_left(_Rb_tree_node_base* __x, _Rb_tree_node_base*& __root)
 {
+  //令y为旋转点的右子节点
   _Rb_tree_node_base* __y = __x->_M_right;
   __x->_M_right = __y->_M_left;
-  if (__y->_M_left !=0)
+  if (__y->_M_left != 0)
     __y->_M_left->_M_parent = __x;
   __y->_M_parent = __x->_M_parent;
 
+  //令y完全顶替x的地位（必须将x对其父节点的关系完全接收过来）
+  //x为根节点
   if (__x == __root)
     __root = __y;
+  //x为其父节点的左子结点
   else if (__x == __x->_M_parent->_M_left)
     __x->_M_parent->_M_left = __y;
+  //x为其父节点的右子结点
   else
     __x->_M_parent->_M_right = __y;
   __y->_M_left = __x;
   __x->_M_parent = __y;
 }
 
-inline void 
-_Rb_tree_rotate_right(_Rb_tree_node_base* __x, _Rb_tree_node_base*& __root)
+/* 
+         x             y
+        / \           / \
+       y       ==>       x
+      / \               / \
+         z             z
+*/
+
+//x为旋转节点，y为新增节点，维护旋转节点和新增节点的三个节点指针；x的右子节点，y的左子节点不用管。
+inline void _Rb_tree_rotate_right(_Rb_tree_node_base* __x, _Rb_tree_node_base*& __root)
 {
   _Rb_tree_node_base* __y = __x->_M_left;
   __x->_M_left = __y->_M_right;
   if (__y->_M_right != 0)
-    __y->_M_right->_M_parent = __x;
+    __y->_M_right->_M_parent = __x; 
   __y->_M_parent = __x->_M_parent;
 
   if (__x == __root)
@@ -251,21 +294,34 @@ _Rb_tree_rotate_right(_Rb_tree_node_base* __x, _Rb_tree_node_base*& __root)
   __x->_M_parent = __y;
 }
 
-inline void 
-_Rb_tree_rebalance(_Rb_tree_node_base* __x, _Rb_tree_node_base*& __root)
+//重新令树形平衡（改变颜色及旋转树形）
+//参数x为新增节点，参数root为根节点
+inline void _Rb_tree_rebalance(_Rb_tree_node_base* __x, _Rb_tree_node_base*& __root)
 {
+  //新增节点必为红
   __x->_M_color = _S_rb_tree_red;
-  while (__x != __root && __x->_M_parent->_M_color == _S_rb_tree_red) {
-    if (__x->_M_parent == __x->_M_parent->_M_parent->_M_left) {
+  //当父节点是红色时
+  while (__x != __root && __x->_M_parent->_M_color == _S_rb_tree_red) 
+  {
+    //如果父节点是祖父节点的左子节点
+    if (__x->_M_parent == __x->_M_parent->_M_parent->_M_left) 
+    {
+      //令y为祖父节点的右子节点（伯父节点）
       _Rb_tree_node_base* __y = __x->_M_parent->_M_parent->_M_right;
-      if (__y && __y->_M_color == _S_rb_tree_red) {
+      //如果伯父节点存在且为红色，父节点伯父节点都是红色，要进行颜色转换
+      if (__y && __y->_M_color == _S_rb_tree_red) 
+      {
         __x->_M_parent->_M_color = _S_rb_tree_black;
         __y->_M_color = _S_rb_tree_black;
         __x->_M_parent->_M_parent->_M_color = _S_rb_tree_red;
         __x = __x->_M_parent->_M_parent;
       }
-      else {
-        if (__x == __x->_M_parent->_M_right) {
+      //无伯父节点，或伯父节点为黑色
+      else 
+      {
+        //内插
+        if (__x == __x->_M_parent->_M_right) 
+        {
           __x = __x->_M_parent;
           _Rb_tree_rotate_left(__x, __root);
         }
@@ -274,16 +330,25 @@ _Rb_tree_rebalance(_Rb_tree_node_base* __x, _Rb_tree_node_base*& __root)
         _Rb_tree_rotate_right(__x->_M_parent->_M_parent, __root);
       }
     }
-    else {
+    //如果父节点是祖父节点的右子节点
+    else 
+    {
+      //令y为祖父节点的左子结点（伯父节点）
       _Rb_tree_node_base* __y = __x->_M_parent->_M_parent->_M_left;
-      if (__y && __y->_M_color == _S_rb_tree_red) {
+      //有伯父节点，且为红，父节点伯父节点都是红色，要进行颜色转换
+      if (__y && __y->_M_color == _S_rb_tree_red) 
+      {
         __x->_M_parent->_M_color = _S_rb_tree_black;
         __y->_M_color = _S_rb_tree_black;
         __x->_M_parent->_M_parent->_M_color = _S_rb_tree_red;
         __x = __x->_M_parent->_M_parent;
       }
-      else {
-        if (__x == __x->_M_parent->_M_left) {
+      else 
+      //无伯父节点，或伯父节点为黑色
+      {
+        //内插
+        if (__x == __x->_M_parent->_M_left) 
+        {
           __x = __x->_M_parent;
           _Rb_tree_rotate_right(__x, __root);
         }
@@ -518,8 +583,7 @@ protected:
 
 #endif /* __STL_USE_STD_ALLOCATORS */
 
-template <class _Key, class _Value, class _KeyOfValue, class _Compare,
-          class _Alloc = __STL_DEFAULT_ALLOCATOR(_Value) >
+template <class _Key, class _Value, class _KeyOfValue, class _Compare, class _Alloc = __STL_DEFAULT_ALLOCATOR(_Value) >
 class _Rb_tree : protected _Rb_tree_base<_Value, _Alloc> {
   typedef _Rb_tree_base<_Value, _Alloc> _Base;
 protected:
@@ -551,14 +615,18 @@ protected:
 
   _Link_type _M_create_node(const value_type& __x)
   {
+    //配置空间
     _Link_type __tmp = _M_get_node();
-    __STL_TRY {
+    __STL_TRY 
+    {
+      //构造内容
       construct(&__tmp->_M_value_field, __x);
     }
     __STL_UNWIND(_M_put_node(__tmp));
     return __tmp;
   }
 
+  //复制一个节点（的值和颜色）
   _Link_type _M_clone_node(_Link_type __x)
   {
     _Link_type __tmp = _M_create_node(__x->_M_value_field);
@@ -570,52 +638,41 @@ protected:
 
   void destroy_node(_Link_type __p)
   {
+    //析构内容
     destroy(&__p->_M_value_field);
+    //释放内存
     _M_put_node(__p);
   }
 
 protected:
+  //追踪记录树的大小（节点数量）
   size_type _M_node_count; // keeps track of size of tree
+  //节点间的键值大小比较准则。应该会是个function object
   _Compare _M_key_compare;
 
-  _Link_type& _M_root() const 
-    { return (_Link_type&) _M_header->_M_parent; }
-  _Link_type& _M_leftmost() const 
-    { return (_Link_type&) _M_header->_M_left; }
-  _Link_type& _M_rightmost() const 
-    { return (_Link_type&) _M_header->_M_right; }
+  //以下三个函数用来方便取得header的成员
+  _Link_type& _M_root() const { return (_Link_type&) _M_header->_M_parent; }
+  _Link_type& _M_leftmost() const { return (_Link_type&) _M_header->_M_left; }
+  _Link_type& _M_rightmost() const { return (_Link_type&) _M_header->_M_right; }
 
-  static _Link_type& _S_left(_Link_type __x)
-    { return (_Link_type&)(__x->_M_left); }
-  static _Link_type& _S_right(_Link_type __x)
-    { return (_Link_type&)(__x->_M_right); }
-  static _Link_type& _S_parent(_Link_type __x)
-    { return (_Link_type&)(__x->_M_parent); }
-  static reference _S_value(_Link_type __x)
-    { return __x->_M_value_field; }
-  static const _Key& _S_key(_Link_type __x)
-    { return _KeyOfValue()(_S_value(__x)); }
-  static _Color_type& _S_color(_Link_type __x)
-    { return (_Color_type&)(__x->_M_color); }
+  //以下十二个函数用来方便获取节点x的成员。
+  static _Link_type& _S_left(_Link_type __x) { return (_Link_type&)(__x->_M_left); }
+  static _Link_type& _S_right(_Link_type __x) { return (_Link_type&)(__x->_M_right); }
+  static _Link_type& _S_parent(_Link_type __x) { return (_Link_type&)(__x->_M_parent); }
+  static reference _S_value(_Link_type __x) { return __x->_M_value_field; }
+  static const _Key& _S_key(_Link_type __x) { return _KeyOfValue()(_S_value(__x)); }
+  static _Color_type& _S_color(_Link_type __x) { return (_Color_type&)(__x->_M_color); }
 
-  static _Link_type& _S_left(_Base_ptr __x)
-    { return (_Link_type&)(__x->_M_left); }
-  static _Link_type& _S_right(_Base_ptr __x)
-    { return (_Link_type&)(__x->_M_right); }
-  static _Link_type& _S_parent(_Base_ptr __x)
-    { return (_Link_type&)(__x->_M_parent); }
-  static reference _S_value(_Base_ptr __x)
-    { return ((_Link_type)__x)->_M_value_field; }
-  static const _Key& _S_key(_Base_ptr __x)
-    { return _KeyOfValue()(_S_value(_Link_type(__x)));} 
-  static _Color_type& _S_color(_Base_ptr __x)
-    { return (_Color_type&)(_Link_type(__x)->_M_color); }
+  static _Link_type& _S_left(_Base_ptr __x) { return (_Link_type&)(__x->_M_left); }
+  static _Link_type& _S_right(_Base_ptr __x) { return (_Link_type&)(__x->_M_right); }
+  static _Link_type& _S_parent(_Base_ptr __x) { return (_Link_type&)(__x->_M_parent); }
+  static reference _S_value(_Base_ptr __x) { return ((_Link_type)__x)->_M_value_field; }
+  static const _Key& _S_key(_Base_ptr __x) { return _KeyOfValue()(_S_value(_Link_type(__x)));} 
+  static _Color_type& _S_color(_Base_ptr __x) { return (_Color_type&)(_Link_type(__x)->_M_color); }
 
-  static _Link_type _S_minimum(_Link_type __x) 
-    { return (_Link_type)  _Rb_tree_node_base::_S_minimum(__x); }
-
-  static _Link_type _S_maximum(_Link_type __x)
-    { return (_Link_type) _Rb_tree_node_base::_S_maximum(__x); }
+  //求取极大值和极小值。node class有实现此功能。
+  static _Link_type _S_minimum(_Link_type __x) { return (_Link_type)  _Rb_tree_node_base::_S_minimum(__x); }
+  static _Link_type _S_maximum(_Link_type __x) { return (_Link_type) _Rb_tree_node_base::_S_maximum(__x); }
 
 public:
   typedef _Rb_tree_iterator<value_type, reference, pointer> iterator;
@@ -641,25 +698,18 @@ private:
 
 public:
                                 // allocation/deallocation
-  _Rb_tree()
-    : _Base(allocator_type()), _M_node_count(0), _M_key_compare()
-    { _M_empty_initialize(); }
+  _Rb_tree() : _Base(allocator_type()), _M_node_count(0), _M_key_compare() { _M_empty_initialize(); }
 
-  _Rb_tree(const _Compare& __comp)
-    : _Base(allocator_type()), _M_node_count(0), _M_key_compare(__comp) 
-    { _M_empty_initialize(); }
+  _Rb_tree(const _Compare& __comp) : _Base(allocator_type()), _M_node_count(0), _M_key_compare(__comp) { _M_empty_initialize(); }
 
-  _Rb_tree(const _Compare& __comp, const allocator_type& __a)
-    : _Base(__a), _M_node_count(0), _M_key_compare(__comp) 
-    { _M_empty_initialize(); }
+  _Rb_tree(const _Compare& __comp, const allocator_type& __a) : _Base(__a), _M_node_count(0), _M_key_compare(__comp) { _M_empty_initialize(); }
 
-  _Rb_tree(const _Rb_tree<_Key,_Value,_KeyOfValue,_Compare,_Alloc>& __x) 
-    : _Base(__x.get_allocator()),
-      _M_node_count(0), _M_key_compare(__x._M_key_compare)
+  _Rb_tree(const _Rb_tree<_Key,_Value,_KeyOfValue,_Compare,_Alloc>& __x) : _Base(__x.get_allocator()), _M_node_count(0), _M_key_compare(__x._M_key_compare)
   { 
     if (__x._M_root() == 0)
       _M_empty_initialize();
-    else {
+    else 
+    {
       _S_color(_M_header) = _S_rb_tree_red;
       _M_root() = _M_copy(__x._M_root(), _M_header);
       _M_leftmost() = _S_minimum(_M_root());
@@ -672,11 +722,21 @@ public:
   operator=(const _Rb_tree<_Key,_Value,_KeyOfValue,_Compare,_Alloc>& __x);
 
 private:
-  void _M_empty_initialize() {
+  void _M_empty_initialize() 
+  {
+    /*
+    //树状结构的各种操作，最需注意的就是边界情况的发生，也就是走到根节点时要有特殊处理。
+    //为了简化处理，特别为根节点再设计一个父节点，名为header。
+    //每当插入新节点时，不但要依照RB-tree的规则来调整，并且维护header的正确性，
+    //使其父节点指向根节点，左子结点指向最小节点，右子节点指向最大节点。
+    */
+   //令header为红色，用来区分header和root（在iterator.operator++中）
     _S_color(_M_header) = _S_rb_tree_red; // used to distinguish header from 
                                           // __root, in iterator.operator++
     _M_root() = 0;
+    //令header的左子结点为自己
     _M_leftmost() = _M_header;
+    //令header的右子结点为自己
     _M_rightmost() = _M_header;
   }
 
@@ -849,82 +909,105 @@ _Rb_tree<_Key,_Value,_KeyOfValue,_Compare,_Alloc>
   return *this;
 }
 
-template <class _Key, class _Value, class _KeyOfValue, 
-          class _Compare, class _Alloc>
+template <class _Key, class _Value, class _KeyOfValue, class _Compare, class _Alloc>
 typename _Rb_tree<_Key,_Value,_KeyOfValue,_Compare,_Alloc>::iterator
-_Rb_tree<_Key,_Value,_KeyOfValue,_Compare,_Alloc>
-  ::_M_insert(_Base_ptr __x_, _Base_ptr __y_, const _Value& __v)
+//参数x为新值插入点，参数y为插入点的父节点，参数v为新值
+_Rb_tree<_Key,_Value,_KeyOfValue,_Compare,_Alloc>::_M_insert(_Base_ptr __x_, _Base_ptr __y_, const _Value& __v)
 {
   _Link_type __x = (_Link_type) __x_;
   _Link_type __y = (_Link_type) __y_;
   _Link_type __z;
 
-  if (__y == _M_header || __x != 0 || 
-      _M_key_compare(_KeyOfValue()(__v), _S_key(__y))) {
+  //_M_key_compare是键值大小比较准则。应该会是个function object
+  if (__y == _M_header || __x != 0 || _M_key_compare(_KeyOfValue()(__v), _S_key(__y))) 
+  {
+    //产生一个新节点
     __z = _M_create_node(__v);
+    //包含了当y为header的情况，毕竟header的left是leftmost。
     _S_left(__y) = __z;               // also makes _M_leftmost() = __z 
                                       //    when __y == _M_header
-    if (__y == _M_header) {
+    //插入点是根节点时，要维护header
+    if (__y == _M_header) 
+    {
       _M_root() = __z;
       _M_rightmost() = __z;
     }
+    //维护leftmost用
     else if (__y == _M_leftmost())
       _M_leftmost() = __z;   // maintain _M_leftmost() pointing to min node
   }
-  else {
+  else 
+  {
+    //产生一个新节点
     __z = _M_create_node(__v);
+    //令新节点称为插入点的父节点的右子节点
     _S_right(__y) = __z;
     if (__y == _M_rightmost())
+      //维护rightmost
       _M_rightmost() = __z;  // maintain _M_rightmost() pointing to max node
   }
+  //设定新节点的父节点
   _S_parent(__z) = __y;
+  //设定新节点的左子结点
   _S_left(__z) = 0;
+  //设定新节点的右子结点
   _S_right(__z) = 0;
+  //新节点的颜色将在_Rb_tree_rebalance()中设定并调整
   _Rb_tree_rebalance(__z, _M_header->_M_parent);
+  //记录节点数
   ++_M_node_count;
+  //返回一个迭代器指向新增节点
   return iterator(__z);
 }
 
-template <class _Key, class _Value, class _KeyOfValue, 
-          class _Compare, class _Alloc>
+//插入节点的键值在整棵树中可以重复，如何插入都会成功（除非空间不足导致配置失败）
+template <class _Key, class _Value, class _KeyOfValue, class _Compare, class _Alloc>
 typename _Rb_tree<_Key,_Value,_KeyOfValue,_Compare,_Alloc>::iterator
-_Rb_tree<_Key,_Value,_KeyOfValue,_Compare,_Alloc>
-  ::insert_equal(const _Value& __v)
+_Rb_tree<_Key,_Value,_KeyOfValue,_Compare,_Alloc>::insert_equal(const _Value& __v)
 {
   _Link_type __y = _M_header;
   _Link_type __x = _M_root();
-  while (__x != 0) {
+  //从根节点开始，往下寻找适当的插入点
+  while (__x != 0) 
+  {
     __y = __x;
-    __x = _M_key_compare(_KeyOfValue()(__v), _S_key(__x)) ? 
-            _S_left(__x) : _S_right(__x);
+    __x = _M_key_compare(_KeyOfValue()(__v), _S_key(__x)) ? _S_left(__x) : _S_right(__x);
   }
   return _M_insert(__x, __y, __v);
 }
 
-
-template <class _Key, class _Value, class _KeyOfValue, 
-          class _Compare, class _Alloc>
-pair<typename _Rb_tree<_Key,_Value,_KeyOfValue,_Compare,_Alloc>::iterator, 
-     bool>
-_Rb_tree<_Key,_Value,_KeyOfValue,_Compare,_Alloc>
-  ::insert_unique(const _Value& __v)
+//表示被插入节点的键值(key)在整棵树中必须独一无二（因此，如果树中已存在相同的键值，插入操作就不会真正进行）
+template <class _Key, class _Value, class _KeyOfValue, class _Compare, class _Alloc>
+//返回值是个pair，第一个元素是个RB-tree迭代器，指向新增节点，第二个元素表示插入成功与否
+pair<typename _Rb_tree<_Key,_Value,_KeyOfValue,_Compare,_Alloc>::iterator, bool>
+_Rb_tree<_Key,_Value,_KeyOfValue,_Compare,_Alloc>::insert_unique(const _Value& __v)
 {
   _Link_type __y = _M_header;
   _Link_type __x = _M_root();
   bool __comp = true;
-  while (__x != 0) {
+  //离开while循环之后，y所指即插入点的父节点（且此时的y必为叶结点）
+  while (__x != 0) 
+  {
     __y = __x;
     __comp = _M_key_compare(_KeyOfValue()(__v), _S_key(__x));
     __x = __comp ? _S_left(__x) : _S_right(__x);
   }
+  //令迭代器j指向插入点的父节点y
   iterator __j = iterator(__y);   
+  //如果插入点在左侧
   if (__comp)
-    if (__j == begin())     
+    //如果插入点的父节点为最左节点
+    if (__j == begin())   
+      //x为插入点，y为插入点的父节点，v为新值  
       return pair<iterator,bool>(_M_insert(__x, __y, __v), true);
     else
+      //如果插入点不是最左节点，调整j（找到比y小一号的节点），重新测试
       --__j;
+  //v < y，y不是最左节点，v大于比y小一号的节点
+  //v >= y，换个顺序再比一次，清除==的可能
   if (_M_key_compare(_S_key(__j._M_node), _KeyOfValue()(__v)))
     return pair<iterator,bool>(_M_insert(__x, __y, __v), true);
+  //进行至此，表示新值一定与树中键值重复，那么就不该插入新值。
   return pair<iterator,bool>(__j, false);
 }
 
@@ -1142,8 +1225,7 @@ void _Rb_tree<_Key,_Value,_KeyOfValue,_Compare,_Alloc>
   while (__first != __last) erase(*__first++);
 }
 
-template <class _Key, class _Value, class _KeyOfValue, 
-          class _Compare, class _Alloc>
+template <class _Key, class _Value, class _KeyOfValue,  class _Compare, class _Alloc>
 typename _Rb_tree<_Key,_Value,_KeyOfValue,_Compare,_Alloc>::iterator 
 _Rb_tree<_Key,_Value,_KeyOfValue,_Compare,_Alloc>::find(const _Key& __k)
 {
@@ -1157,8 +1239,7 @@ _Rb_tree<_Key,_Value,_KeyOfValue,_Compare,_Alloc>::find(const _Key& __k)
       __x = _S_right(__x);
 
   iterator __j = iterator(__y);   
-  return (__j == end() || _M_key_compare(__k, _S_key(__j._M_node))) ? 
-     end() : __j;
+  return (__j == end() || _M_key_compare(__k, _S_key(__j._M_node))) ? end() : __j;
 }
 
 template <class _Key, class _Value, class _KeyOfValue, 
