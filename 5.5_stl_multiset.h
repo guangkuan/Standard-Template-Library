@@ -108,22 +108,17 @@ public:
 
 #else
 
-  multiset(const value_type* __first, const value_type* __last)
-    : _M_t(_Compare(), allocator_type())
+  //与set的唯一差别在于它允许键值重复，因此它的插入操作采用的是底层机制RB-tree的insert_equal()而非insert_unique()。
+  multiset(const value_type* __first, const value_type* __last) : _M_t(_Compare(), allocator_type())
     { _M_t.insert_equal(__first, __last); }
 
-  multiset(const value_type* __first, const value_type* __last,
-           const _Compare& __comp,
-           const allocator_type& __a = allocator_type())
+  multiset(const value_type* __first, const value_type* __last, const _Compare& __comp, const allocator_type& __a = allocator_type())
     : _M_t(__comp, __a) { _M_t.insert_equal(__first, __last); }
 
-  multiset(const_iterator __first, const_iterator __last)
-    : _M_t(_Compare(), allocator_type())
+  multiset(const_iterator __first, const_iterator __last) : _M_t(_Compare(), allocator_type())
     { _M_t.insert_equal(__first, __last); }
 
-  multiset(const_iterator __first, const_iterator __last,
-           const _Compare& __comp,
-           const allocator_type& __a = allocator_type())
+  multiset(const_iterator __first, const_iterator __last, const _Compare& __comp, const allocator_type& __a = allocator_type())
     : _M_t(__comp, __a) { _M_t.insert_equal(__first, __last); }
    
 #endif /* __STL_MEMBER_TEMPLATES */
