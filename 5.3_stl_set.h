@@ -42,9 +42,8 @@ __STL_BEGIN_NAMESPACE
 
 // Forward declarations of operators < and ==, needed for friend declaration.
 
-template <class _Key, class _Compare __STL_DEPENDENT_DEFAULT_TMPL(less<_Key>),
-          class _Alloc = __STL_DEFAULT_ALLOCATOR(_Key) >
-class set;
+//默认情况下采用递增排序
+template <class _Key, class _Compare __STL_DEPENDENT_DEFAULT_TMPL(less<_Key>), class _Alloc = __STL_DEFAULT_ALLOCATOR(_Key) > class set;
 
 template <class _Key, class _Compare, class _Alloc>
 inline bool operator==(const set<_Key,_Compare,_Alloc>& __x, 
@@ -70,14 +69,16 @@ public:
   typedef _Compare key_compare;
   typedef _Compare value_compare;
 private:
-  typedef _Rb_tree<key_type, value_type, 
-                  _Identity<value_type>, key_compare, _Alloc> _Rep_type;
+  typedef _Rb_tree<key_type, value_type, _Identity<value_type>, key_compare, _Alloc> _Rep_type;
+  //采用红黑树来表现set
   _Rep_type _M_t;  // red-black tree representing set
 public:
   typedef typename _Rep_type::const_pointer pointer;
   typedef typename _Rep_type::const_pointer const_pointer;
   typedef typename _Rep_type::const_reference reference;
   typedef typename _Rep_type::const_reference const_reference;
+  //iterator定义为RB-tree的const_iterator，这表示set的迭代器无法执行写入操作。
+  //这是因为set的元素有一定次序安排，不允许用户在任意处进行写入操作。
   typedef typename _Rep_type::const_iterator iterator;
   typedef typename _Rep_type::const_iterator const_iterator;
   typedef typename _Rep_type::const_reverse_iterator reverse_iterator;
@@ -104,22 +105,16 @@ public:
       const allocator_type& __a = allocator_type())
     : _M_t(__comp, __a) { _M_t.insert_unique(__first, __last); }
 #else
-  set(const value_type* __first, const value_type* __last) 
-    : _M_t(_Compare(), allocator_type()) 
-    { _M_t.insert_unique(__first, __last); }
+  /*
+  //set一定使用RB-tree的insert_unique()而非insert_equal()，因为set不允许相同键值存在。
+  */
+  set(const value_type* __first, const value_type* __last) : _M_t(_Compare(), allocator_type()) { _M_t.insert_unique(__first, __last); }
 
-  set(const value_type* __first, 
-      const value_type* __last, const _Compare& __comp,
-      const allocator_type& __a = allocator_type())
-    : _M_t(__comp, __a) { _M_t.insert_unique(__first, __last); }
+  set(const value_type* __first, const value_type* __last, const _Compare& __comp, const allocator_type& __a = allocator_type()) : _M_t(__comp, __a) { _M_t.insert_unique(__first, __last); }
 
-  set(const_iterator __first, const_iterator __last)
-    : _M_t(_Compare(), allocator_type()) 
-    { _M_t.insert_unique(__first, __last); }
+  set(const_iterator __first, const_iterator __last) : _M_t(_Compare(), allocator_type()) { _M_t.insert_unique(__first, __last); }
 
-  set(const_iterator __first, const_iterator __last, const _Compare& __comp,
-      const allocator_type& __a = allocator_type())
-    : _M_t(__comp, __a) { _M_t.insert_unique(__first, __last); }
+  set(const_iterator __first, const_iterator __last, const _Compare& __comp, const allocator_type& __a = allocator_type()) : _M_t(__comp, __a) { _M_t.insert_unique(__first, __last); }
 #endif /* __STL_MEMBER_TEMPLATES */
 
   set(const set<_Key,_Compare,_Alloc>& __x) : _M_t(__x._M_t) {}
@@ -131,6 +126,7 @@ public:
 
   // accessors:
 
+  //一下所有操作行为，RB-tree都已提供，所以set只要传递调用即可。
   key_compare key_comp() const { return _M_t.key_comp(); }
   value_compare value_comp() const { return _M_t.key_comp(); }
   allocator_type get_allocator() const { return _M_t.get_allocator(); }
@@ -145,11 +141,13 @@ public:
   void swap(set<_Key,_Compare,_Alloc>& __x) { _M_t.swap(__x._M_t); }
 
   // insert/erase
-  pair<iterator,bool> insert(const value_type& __x) { 
+  pair<iterator,bool> insert(const value_type& __x) 
+  { 
     pair<typename _Rep_type::iterator, bool> __p = _M_t.insert_unique(__x); 
     return pair<iterator, bool>(__p.first, __p.second);
   }
-  iterator insert(iterator __position, const value_type& __x) {
+  iterator insert(iterator __position, const value_type& __x) 
+  {
     typedef typename _Rep_type::iterator _Rep_iterator;
     return _M_t.insert_unique((_Rep_iterator&)__position, __x);
   }
@@ -159,10 +157,12 @@ public:
     _M_t.insert_unique(__first, __last);
   }
 #else
-  void insert(const_iterator __first, const_iterator __last) {
+  void insert(const_iterator __first, const_iterator __last) 
+  {
     _M_t.insert_unique(__first, __last);
   }
-  void insert(const value_type* __first, const value_type* __last) {
+  void insert(const value_type* __first, const value_type* __last) 
+  {
     _M_t.insert_unique(__first, __last);
   }
 #endif /* __STL_MEMBER_TEMPLATES */
