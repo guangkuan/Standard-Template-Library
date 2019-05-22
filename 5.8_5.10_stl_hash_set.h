@@ -28,8 +28,8 @@
  *   You should not attempt to use it directly.
  */
 
-#ifndef __SGI_STL_INTERNAL_HASH_MAP_H
-#define __SGI_STL_INTERNAL_HASH_MAP_H
+#ifndef __SGI_STL_INTERNAL_HASH_SET_H
+#define __SGI_STL_INTERNAL_HASH_SET_H
 
 #include <concept_checks.h>
 
@@ -42,48 +42,51 @@ __STL_BEGIN_NAMESPACE
 
 // Forward declaration of equality operator; needed for friend declaration.
 
-template <class _Key, class _Tp,
-          class _HashFcn  __STL_DEPENDENT_DEFAULT_TMPL(hash<_Key>),
-          class _EqualKey __STL_DEPENDENT_DEFAULT_TMPL(equal_to<_Key>),
-          class _Alloc =  __STL_DEFAULT_ALLOCATOR(_Tp) >
-class hash_map;
+template <class _Value,
+          class _HashFcn  __STL_DEPENDENT_DEFAULT_TMPL(hash<_Value>),
+          class _EqualKey __STL_DEPENDENT_DEFAULT_TMPL(equal_to<_Value>),
+          class _Alloc =  __STL_DEFAULT_ALLOCATOR(_Value) >
+class hash_set;
 
-template <class _Key, class _Tp, class _HashFn, class _EqKey, class _Alloc>
-inline bool operator==(const hash_map<_Key, _Tp, _HashFn, _EqKey, _Alloc>&,
-                       const hash_map<_Key, _Tp, _HashFn, _EqKey, _Alloc>&);
+template <class _Value, class _HashFcn, class _EqualKey, class _Alloc>
+inline bool 
+operator==(const hash_set<_Value,_HashFcn,_EqualKey,_Alloc>& __hs1,
+           const hash_set<_Value,_HashFcn,_EqualKey,_Alloc>& __hs2);
 
-template <class _Key, class _Tp, class _HashFcn, class _EqualKey,
-          class _Alloc>
-class hash_map
+/*
+/ 运用set，为的是能够迅速搜寻元素。这一点，不论是其底层是RB-tree或是hashtable，都可以达成任务。
+/ 但是，RB-tree有自动排序功能而hashtable没有，反应出来的结果就是，set的元素有自动排序功能而hash_set没有。
+/ hash_set的用法与set完全相同
+/ 凡是hashtable无法处理者，hash_set也无法处理。
+*/
+template <class _Value, class _HashFcn, class _EqualKey, class _Alloc>
+class hash_set
 {
   // requirements:
 
-  __STL_CLASS_REQUIRES(_Key, _Assignable);
-  __STL_CLASS_REQUIRES(_Tp, _Assignable);
-  __STL_CLASS_UNARY_FUNCTION_CHECK(_HashFcn, size_t, _Key);
-  __STL_CLASS_BINARY_FUNCTION_CHECK(_EqualKey, bool, _Key, _Key);
+  __STL_CLASS_REQUIRES(_Value, _Assignable);
+  __STL_CLASS_UNARY_FUNCTION_CHECK(_HashFcn, size_t, _Value);
+  __STL_CLASS_BINARY_FUNCTION_CHECK(_EqualKey, bool, _Value, _Value);
 
 private:
-  typedef hashtable<pair<const _Key,_Tp>,_Key,_HashFcn,
-                    _Select1st<pair<const _Key,_Tp> >,_EqualKey,_Alloc> _Ht;
+  typedef hashtable<_Value, _Value, _HashFcn, _Identity<_Value>, _EqualKey, _Alloc> _Ht;
+  //底层机制以hash table完成
   _Ht _M_ht;
 
 public:
   typedef typename _Ht::key_type key_type;
-  typedef _Tp data_type;
-  typedef _Tp mapped_type;
   typedef typename _Ht::value_type value_type;
   typedef typename _Ht::hasher hasher;
   typedef typename _Ht::key_equal key_equal;
-  
+
   typedef typename _Ht::size_type size_type;
   typedef typename _Ht::difference_type difference_type;
-  typedef typename _Ht::pointer pointer;
+  typedef typename _Ht::const_pointer pointer;
   typedef typename _Ht::const_pointer const_pointer;
-  typedef typename _Ht::reference reference;
+  typedef typename _Ht::const_reference reference;
   typedef typename _Ht::const_reference const_reference;
 
-  typedef typename _Ht::iterator iterator;
+  typedef typename _Ht::const_iterator iterator;
   typedef typename _Ht::const_iterator const_iterator;
 
   typedef typename _Ht::allocator_type allocator_type;
@@ -93,66 +96,57 @@ public:
   allocator_type get_allocator() const { return _M_ht.get_allocator(); }
 
 public:
-  hash_map() : _M_ht(100, hasher(), key_equal(), allocator_type()) {}
-  explicit hash_map(size_type __n)
+  // 默认使用大小为100的表格。将被hash table调整为最接近且较大的质数
+  hash_set() : _M_ht(100, hasher(), key_equal(), allocator_type()) {}
+  explicit hash_set(size_type __n)
     : _M_ht(__n, hasher(), key_equal(), allocator_type()) {}
-  hash_map(size_type __n, const hasher& __hf)
+  hash_set(size_type __n, const hasher& __hf)
     : _M_ht(__n, __hf, key_equal(), allocator_type()) {}
-  hash_map(size_type __n, const hasher& __hf, const key_equal& __eql,
+  hash_set(size_type __n, const hasher& __hf, const key_equal& __eql,
            const allocator_type& __a = allocator_type())
     : _M_ht(__n, __hf, __eql, __a) {}
 
 #ifdef __STL_MEMBER_TEMPLATES
   template <class _InputIterator>
-  hash_map(_InputIterator __f, _InputIterator __l)
+  hash_set(_InputIterator __f, _InputIterator __l)
     : _M_ht(100, hasher(), key_equal(), allocator_type())
     { _M_ht.insert_unique(__f, __l); }
   template <class _InputIterator>
-  hash_map(_InputIterator __f, _InputIterator __l, size_type __n)
+  hash_set(_InputIterator __f, _InputIterator __l, size_type __n)
     : _M_ht(__n, hasher(), key_equal(), allocator_type())
     { _M_ht.insert_unique(__f, __l); }
   template <class _InputIterator>
-  hash_map(_InputIterator __f, _InputIterator __l, size_type __n,
+  hash_set(_InputIterator __f, _InputIterator __l, size_type __n,
            const hasher& __hf)
     : _M_ht(__n, __hf, key_equal(), allocator_type())
     { _M_ht.insert_unique(__f, __l); }
   template <class _InputIterator>
-  hash_map(_InputIterator __f, _InputIterator __l, size_type __n,
+  hash_set(_InputIterator __f, _InputIterator __l, size_type __n,
            const hasher& __hf, const key_equal& __eql,
            const allocator_type& __a = allocator_type())
     : _M_ht(__n, __hf, __eql, __a)
     { _M_ht.insert_unique(__f, __l); }
-
 #else
-  hash_map(const value_type* __f, const value_type* __l)
-    : _M_ht(100, hasher(), key_equal(), allocator_type())
+  // 以下插入操作全部使用insert_unique()，不允许键值重复
+  hash_set(const value_type* __f, const value_type* __l) : _M_ht(100, hasher(), key_equal(), allocator_type())
     { _M_ht.insert_unique(__f, __l); }
-  hash_map(const value_type* __f, const value_type* __l, size_type __n)
-    : _M_ht(__n, hasher(), key_equal(), allocator_type())
+  hash_set(const value_type* __f, const value_type* __l, size_type __n) : _M_ht(__n, hasher(), key_equal(), allocator_type())
     { _M_ht.insert_unique(__f, __l); }
-  hash_map(const value_type* __f, const value_type* __l, size_type __n,
-           const hasher& __hf)
+  hash_set(const value_type* __f, const value_type* __l, size_type __n, const hasher& __hf)
     : _M_ht(__n, __hf, key_equal(), allocator_type())
     { _M_ht.insert_unique(__f, __l); }
-  hash_map(const value_type* __f, const value_type* __l, size_type __n,
-           const hasher& __hf, const key_equal& __eql,
-           const allocator_type& __a = allocator_type())
+  hash_set(const value_type* __f, const value_type* __l, size_type __n, const hasher& __hf, const key_equal& __eql, const allocator_type& __a = allocator_type())
     : _M_ht(__n, __hf, __eql, __a)
     { _M_ht.insert_unique(__f, __l); }
 
-  hash_map(const_iterator __f, const_iterator __l)
-    : _M_ht(100, hasher(), key_equal(), allocator_type())
+  hash_set(const_iterator __f, const_iterator __l) : _M_ht(100, hasher(), key_equal(), allocator_type())
     { _M_ht.insert_unique(__f, __l); }
-  hash_map(const_iterator __f, const_iterator __l, size_type __n)
-    : _M_ht(__n, hasher(), key_equal(), allocator_type())
+  hash_set(const_iterator __f, const_iterator __l, size_type __n) : _M_ht(__n, hasher(), key_equal(), allocator_type())
     { _M_ht.insert_unique(__f, __l); }
-  hash_map(const_iterator __f, const_iterator __l, size_type __n,
-           const hasher& __hf)
+  hash_set(const_iterator __f, const_iterator __l, size_type __n, const hasher& __hf)
     : _M_ht(__n, __hf, key_equal(), allocator_type())
     { _M_ht.insert_unique(__f, __l); }
-  hash_map(const_iterator __f, const_iterator __l, size_type __n,
-           const hasher& __hf, const key_equal& __eql,
-           const allocator_type& __a = allocator_type())
+  hash_set(const_iterator __f, const_iterator __l, size_type __n, const hasher& __hf, const key_equal& __eql, const allocator_type& __a = allocator_type())
     : _M_ht(__n, __hf, __eql, __a)
     { _M_ht.insert_unique(__f, __l); }
 #endif /*__STL_MEMBER_TEMPLATES */
@@ -161,54 +155,49 @@ public:
   size_type size() const { return _M_ht.size(); }
   size_type max_size() const { return _M_ht.max_size(); }
   bool empty() const { return _M_ht.empty(); }
-  void swap(hash_map& __hs) { _M_ht.swap(__hs._M_ht); }
+  void swap(hash_set& __hs) { _M_ht.swap(__hs._M_ht); }
 
 #ifdef __STL_MEMBER_TEMPLATES
-  template <class _K1, class _T1, class _HF, class _EqK, class _Al>
-  friend bool operator== (const hash_map<_K1, _T1, _HF, _EqK, _Al>&,
-                          const hash_map<_K1, _T1, _HF, _EqK, _Al>&);
+  template <class _Val, class _HF, class _EqK, class _Al>  
+  friend bool operator== (const hash_set<_Val, _HF, _EqK, _Al>&,
+                          const hash_set<_Val, _HF, _EqK, _Al>&);
 #else /* __STL_MEMBER_TEMPLATES */
   friend bool __STD_QUALIFIER
-  operator== __STL_NULL_TMPL_ARGS (const hash_map&, const hash_map&);
+  operator== __STL_NULL_TMPL_ARGS (const hash_set&, const hash_set&);
 #endif /* __STL_MEMBER_TEMPLATES */
 
-
-  iterator begin() { return _M_ht.begin(); }
-  iterator end() { return _M_ht.end(); }
-  const_iterator begin() const { return _M_ht.begin(); }
-  const_iterator end() const { return _M_ht.end(); }
+  iterator begin() const { return _M_ht.begin(); }
+  iterator end() const { return _M_ht.end(); }
 
 public:
-  pair<iterator,bool> insert(const value_type& __obj)
-    { return _M_ht.insert_unique(__obj); }
+  pair<iterator, bool> insert(const value_type& __obj)
+    {
+      pair<typename _Ht::iterator, bool> __p = _M_ht.insert_unique(__obj);
+      return pair<iterator,bool>(__p.first, __p.second);
+    }
 #ifdef __STL_MEMBER_TEMPLATES
   template <class _InputIterator>
-  void insert(_InputIterator __f, _InputIterator __l)
+  void insert(_InputIterator __f, _InputIterator __l) 
     { _M_ht.insert_unique(__f,__l); }
 #else
   void insert(const value_type* __f, const value_type* __l) {
     _M_ht.insert_unique(__f,__l);
   }
-  void insert(const_iterator __f, const_iterator __l)
-    { _M_ht.insert_unique(__f, __l); }
+  void insert(const_iterator __f, const_iterator __l) 
+    {_M_ht.insert_unique(__f, __l); }
 #endif /*__STL_MEMBER_TEMPLATES */
-  pair<iterator,bool> insert_noresize(const value_type& __obj)
-    { return _M_ht.insert_unique_noresize(__obj); }    
-
-  iterator find(const key_type& __key) { return _M_ht.find(__key); }
-  const_iterator find(const key_type& __key) const 
-    { return _M_ht.find(__key); }
-
-  _Tp& operator[](const key_type& __key) {
-    return _M_ht.find_or_insert(value_type(__key, _Tp())).second;
+  pair<iterator, bool> insert_noresize(const value_type& __obj)
+  {
+    pair<typename _Ht::iterator, bool> __p = 
+      _M_ht.insert_unique_noresize(__obj);
+    return pair<iterator, bool>(__p.first, __p.second);
   }
+
+  iterator find(const key_type& __key) const { return _M_ht.find(__key); }
 
   size_type count(const key_type& __key) const { return _M_ht.count(__key); }
   
-  pair<iterator, iterator> equal_range(const key_type& __key)
-    { return _M_ht.equal_range(__key); }
-  pair<const_iterator, const_iterator>
-  equal_range(const key_type& __key) const
+  pair<iterator, iterator> equal_range(const key_type& __key) const
     { return _M_ht.equal_range(__key); }
 
   size_type erase(const key_type& __key) {return _M_ht.erase(__key); }
@@ -216,6 +205,7 @@ public:
   void erase(iterator __f, iterator __l) { _M_ht.erase(__f, __l); }
   void clear() { _M_ht.clear(); }
 
+public:
   void resize(size_type __hint) { _M_ht.resize(__hint); }
   size_type bucket_count() const { return _M_ht.bucket_count(); }
   size_type max_bucket_count() const { return _M_ht.max_bucket_count(); }
@@ -223,79 +213,71 @@ public:
     { return _M_ht.elems_in_bucket(__n); }
 };
 
-template <class _Key, class _Tp, class _HashFcn, class _EqlKey, class _Alloc>
+template <class _Value, class _HashFcn, class _EqualKey, class _Alloc>
 inline bool 
-operator==(const hash_map<_Key,_Tp,_HashFcn,_EqlKey,_Alloc>& __hm1,
-           const hash_map<_Key,_Tp,_HashFcn,_EqlKey,_Alloc>& __hm2)
+operator==(const hash_set<_Value,_HashFcn,_EqualKey,_Alloc>& __hs1,
+           const hash_set<_Value,_HashFcn,_EqualKey,_Alloc>& __hs2)
 {
-  return __hm1._M_ht == __hm2._M_ht;
+  return __hs1._M_ht == __hs2._M_ht;
 }
 
 #ifdef __STL_FUNCTION_TMPL_PARTIAL_ORDER
 
-template <class _Key, class _Tp, class _HashFcn, class _EqlKey, class _Alloc>
+template <class _Value, class _HashFcn, class _EqualKey, class _Alloc>
 inline bool 
-operator!=(const hash_map<_Key,_Tp,_HashFcn,_EqlKey,_Alloc>& __hm1,
-           const hash_map<_Key,_Tp,_HashFcn,_EqlKey,_Alloc>& __hm2) {
-  return !(__hm1 == __hm2);
+operator!=(const hash_set<_Value,_HashFcn,_EqualKey,_Alloc>& __hs1,
+           const hash_set<_Value,_HashFcn,_EqualKey,_Alloc>& __hs2) {
+  return !(__hs1 == __hs2);
 }
 
-template <class _Key, class _Tp, class _HashFcn, class _EqlKey, class _Alloc>
+template <class _Val, class _HashFcn, class _EqualKey, class _Alloc>
 inline void 
-swap(hash_map<_Key,_Tp,_HashFcn,_EqlKey,_Alloc>& __hm1,
-     hash_map<_Key,_Tp,_HashFcn,_EqlKey,_Alloc>& __hm2)
+swap(hash_set<_Val,_HashFcn,_EqualKey,_Alloc>& __hs1,
+     hash_set<_Val,_HashFcn,_EqualKey,_Alloc>& __hs2)
 {
-  __hm1.swap(__hm2);
+  __hs1.swap(__hs2);
 }
 
 #endif /* __STL_FUNCTION_TMPL_PARTIAL_ORDER */
 
-// Forward declaration of equality operator; needed for friend declaration.
+// hash_multiset和hash_set实现上的唯一差别在于，前者的元素插入操作采用底层机制hashtable的insert_equal()，后者则是采用insert_unique()。
+template <class _Value, class _HashFcn  __STL_DEPENDENT_DEFAULT_TMPL(hash<_Value>), class _EqualKey __STL_DEPENDENT_DEFAULT_TMPL(equal_to<_Value>), class _Alloc =  __STL_DEFAULT_ALLOCATOR(_Value) >
+class hash_multiset;
 
-template <class _Key, class _Tp,
-          class _HashFcn  __STL_DEPENDENT_DEFAULT_TMPL(hash<_Key>),
-          class _EqualKey __STL_DEPENDENT_DEFAULT_TMPL(equal_to<_Key>),
-          class _Alloc =  __STL_DEFAULT_ALLOCATOR(_Tp) >
-class hash_multimap;
-
-template <class _Key, class _Tp, class _HF, class _EqKey, class _Alloc>
+template <class _Val, class _HashFcn, class _EqualKey, class _Alloc>
 inline bool 
-operator==(const hash_multimap<_Key,_Tp,_HF,_EqKey,_Alloc>& __hm1,
-           const hash_multimap<_Key,_Tp,_HF,_EqKey,_Alloc>& __hm2);
+operator==(const hash_multiset<_Val,_HashFcn,_EqualKey,_Alloc>& __hs1,
+           const hash_multiset<_Val,_HashFcn,_EqualKey,_Alloc>& __hs2);
 
-template <class _Key, class _Tp, class _HashFcn, class _EqualKey, 
-          class _Alloc>
-class hash_multimap
+
+template <class _Value, class _HashFcn, class _EqualKey, class _Alloc>
+class hash_multiset
 {
   // requirements:
 
-  __STL_CLASS_REQUIRES(_Key, _Assignable);
-  __STL_CLASS_REQUIRES(_Tp, _Assignable);
-  __STL_CLASS_UNARY_FUNCTION_CHECK(_HashFcn, size_t, _Key);
-  __STL_CLASS_BINARY_FUNCTION_CHECK(_EqualKey, bool, _Key, _Key);
+  __STL_CLASS_REQUIRES(_Value, _Assignable);
+  __STL_CLASS_UNARY_FUNCTION_CHECK(_HashFcn, size_t, _Value);
+  __STL_CLASS_BINARY_FUNCTION_CHECK(_EqualKey, bool, _Value, _Value);
 
 private:
-  typedef hashtable<pair<const _Key, _Tp>, _Key, _HashFcn,
-                    _Select1st<pair<const _Key, _Tp> >, _EqualKey, _Alloc> 
-          _Ht;
+  typedef hashtable<_Value, _Value, _HashFcn, _Identity<_Value>, 
+                    _EqualKey, _Alloc> _Ht;
   _Ht _M_ht;
 
 public:
   typedef typename _Ht::key_type key_type;
-  typedef _Tp data_type;
-  typedef _Tp mapped_type;
   typedef typename _Ht::value_type value_type;
   typedef typename _Ht::hasher hasher;
   typedef typename _Ht::key_equal key_equal;
 
   typedef typename _Ht::size_type size_type;
   typedef typename _Ht::difference_type difference_type;
-  typedef typename _Ht::pointer pointer;
+  typedef typename _Ht::const_pointer pointer;
   typedef typename _Ht::const_pointer const_pointer;
-  typedef typename _Ht::reference reference;
+  typedef typename _Ht::const_reference reference;
   typedef typename _Ht::const_reference const_reference;
 
-  typedef typename _Ht::iterator iterator;
+  typedef typename _Ht::const_iterator iterator;
   typedef typename _Ht::const_iterator const_iterator;
 
   typedef typename _Ht::allocator_type allocator_type;
@@ -305,64 +287,65 @@ public:
   allocator_type get_allocator() const { return _M_ht.get_allocator(); }
 
 public:
-  hash_multimap() : _M_ht(100, hasher(), key_equal(), allocator_type()) {}
-  explicit hash_multimap(size_type __n)
+  hash_multiset()
+    : _M_ht(100, hasher(), key_equal(), allocator_type()) {}
+  explicit hash_multiset(size_type __n)
     : _M_ht(__n, hasher(), key_equal(), allocator_type()) {}
-  hash_multimap(size_type __n, const hasher& __hf)
+  hash_multiset(size_type __n, const hasher& __hf)
     : _M_ht(__n, __hf, key_equal(), allocator_type()) {}
-  hash_multimap(size_type __n, const hasher& __hf, const key_equal& __eql,
+  hash_multiset(size_type __n, const hasher& __hf, const key_equal& __eql,
                 const allocator_type& __a = allocator_type())
     : _M_ht(__n, __hf, __eql, __a) {}
 
 #ifdef __STL_MEMBER_TEMPLATES
   template <class _InputIterator>
-  hash_multimap(_InputIterator __f, _InputIterator __l)
+  hash_multiset(_InputIterator __f, _InputIterator __l)
     : _M_ht(100, hasher(), key_equal(), allocator_type())
     { _M_ht.insert_equal(__f, __l); }
   template <class _InputIterator>
-  hash_multimap(_InputIterator __f, _InputIterator __l, size_type __n)
+  hash_multiset(_InputIterator __f, _InputIterator __l, size_type __n)
     : _M_ht(__n, hasher(), key_equal(), allocator_type())
     { _M_ht.insert_equal(__f, __l); }
   template <class _InputIterator>
-  hash_multimap(_InputIterator __f, _InputIterator __l, size_type __n,
+  hash_multiset(_InputIterator __f, _InputIterator __l, size_type __n,
                 const hasher& __hf)
     : _M_ht(__n, __hf, key_equal(), allocator_type())
     { _M_ht.insert_equal(__f, __l); }
   template <class _InputIterator>
-  hash_multimap(_InputIterator __f, _InputIterator __l, size_type __n,
+  hash_multiset(_InputIterator __f, _InputIterator __l, size_type __n,
                 const hasher& __hf, const key_equal& __eql,
                 const allocator_type& __a = allocator_type())
     : _M_ht(__n, __hf, __eql, __a)
     { _M_ht.insert_equal(__f, __l); }
-
 #else
-  hash_multimap(const value_type* __f, const value_type* __l)
+
+  hash_multiset(const value_type* __f, const value_type* __l)
     : _M_ht(100, hasher(), key_equal(), allocator_type())
     { _M_ht.insert_equal(__f, __l); }
-  hash_multimap(const value_type* __f, const value_type* __l, size_type __n)
+  hash_multiset(const value_type* __f, const value_type* __l, size_type __n)
     : _M_ht(__n, hasher(), key_equal(), allocator_type())
     { _M_ht.insert_equal(__f, __l); }
-  hash_multimap(const value_type* __f, const value_type* __l, size_type __n,
+  hash_multiset(const value_type* __f, const value_type* __l, size_type __n,
                 const hasher& __hf)
     : _M_ht(__n, __hf, key_equal(), allocator_type())
     { _M_ht.insert_equal(__f, __l); }
-  hash_multimap(const value_type* __f, const value_type* __l, size_type __n,
+  hash_multiset(const value_type* __f, const value_type* __l, size_type __n,
                 const hasher& __hf, const key_equal& __eql,
                 const allocator_type& __a = allocator_type())
     : _M_ht(__n, __hf, __eql, __a)
     { _M_ht.insert_equal(__f, __l); }
 
-  hash_multimap(const_iterator __f, const_iterator __l)
+  hash_multiset(const_iterator __f, const_iterator __l)
     : _M_ht(100, hasher(), key_equal(), allocator_type())
     { _M_ht.insert_equal(__f, __l); }
-  hash_multimap(const_iterator __f, const_iterator __l, size_type __n)
+  hash_multiset(const_iterator __f, const_iterator __l, size_type __n)
     : _M_ht(__n, hasher(), key_equal(), allocator_type())
     { _M_ht.insert_equal(__f, __l); }
-  hash_multimap(const_iterator __f, const_iterator __l, size_type __n,
+  hash_multiset(const_iterator __f, const_iterator __l, size_type __n,
                 const hasher& __hf)
     : _M_ht(__n, __hf, key_equal(), allocator_type())
     { _M_ht.insert_equal(__f, __l); }
-  hash_multimap(const_iterator __f, const_iterator __l, size_type __n,
+  hash_multiset(const_iterator __f, const_iterator __l, size_type __n,
                 const hasher& __hf, const key_equal& __eql,
                 const allocator_type& __a = allocator_type())
     : _M_ht(__n, __hf, __eql, __a)
@@ -373,24 +356,22 @@ public:
   size_type size() const { return _M_ht.size(); }
   size_type max_size() const { return _M_ht.max_size(); }
   bool empty() const { return _M_ht.empty(); }
-  void swap(hash_multimap& __hs) { _M_ht.swap(__hs._M_ht); }
+  void swap(hash_multiset& hs) { _M_ht.swap(hs._M_ht); }
 
 #ifdef __STL_MEMBER_TEMPLATES
-  template <class _K1, class _T1, class _HF, class _EqK, class _Al>
-  friend bool operator== (const hash_multimap<_K1, _T1, _HF, _EqK, _Al>&,
-                          const hash_multimap<_K1, _T1, _HF, _EqK, _Al>&);
+  template <class _Val, class _HF, class _EqK, class _Al>  
+  friend bool operator== (const hash_multiset<_Val, _HF, _EqK, _Al>&,
+                          const hash_multiset<_Val, _HF, _EqK, _Al>&);
 #else /* __STL_MEMBER_TEMPLATES */
   friend bool __STD_QUALIFIER
-  operator== __STL_NULL_TMPL_ARGS (const hash_multimap&,const hash_multimap&);
+  operator== __STL_NULL_TMPL_ARGS (const hash_multiset&,const hash_multiset&);
 #endif /* __STL_MEMBER_TEMPLATES */
 
-  iterator begin() { return _M_ht.begin(); }
-  iterator end() { return _M_ht.end(); }
-  const_iterator begin() const { return _M_ht.begin(); }
-  const_iterator end() const { return _M_ht.end(); }
+  iterator begin() const { return _M_ht.begin(); }
+  iterator end() const { return _M_ht.end(); }
 
 public:
-  iterator insert(const value_type& __obj) 
+  iterator insert(const value_type& __obj)
     { return _M_ht.insert_equal(__obj); }
 #ifdef __STL_MEMBER_TEMPLATES
   template <class _InputIterator>
@@ -406,16 +387,11 @@ public:
   iterator insert_noresize(const value_type& __obj)
     { return _M_ht.insert_equal_noresize(__obj); }    
 
-  iterator find(const key_type& __key) { return _M_ht.find(__key); }
-  const_iterator find(const key_type& __key) const 
-    { return _M_ht.find(__key); }
+  iterator find(const key_type& __key) const { return _M_ht.find(__key); }
 
   size_type count(const key_type& __key) const { return _M_ht.count(__key); }
   
-  pair<iterator, iterator> equal_range(const key_type& __key)
-    { return _M_ht.equal_range(__key); }
-  pair<const_iterator, const_iterator>
-  equal_range(const key_type& __key) const
+  pair<iterator, iterator> equal_range(const key_type& __key) const
     { return _M_ht.equal_range(__key); }
 
   size_type erase(const key_type& __key) {return _M_ht.erase(__key); }
@@ -431,42 +407,41 @@ public:
     { return _M_ht.elems_in_bucket(__n); }
 };
 
-template <class _Key, class _Tp, class _HF, class _EqKey, class _Alloc>
+template <class _Val, class _HashFcn, class _EqualKey, class _Alloc>
 inline bool 
-operator==(const hash_multimap<_Key,_Tp,_HF,_EqKey,_Alloc>& __hm1,
-           const hash_multimap<_Key,_Tp,_HF,_EqKey,_Alloc>& __hm2)
+operator==(const hash_multiset<_Val,_HashFcn,_EqualKey,_Alloc>& __hs1,
+           const hash_multiset<_Val,_HashFcn,_EqualKey,_Alloc>& __hs2)
 {
-  return __hm1._M_ht == __hm2._M_ht;
+  return __hs1._M_ht == __hs2._M_ht;
 }
 
 #ifdef __STL_FUNCTION_TMPL_PARTIAL_ORDER
 
-template <class _Key, class _Tp, class _HF, class _EqKey, class _Alloc>
+template <class _Val, class _HashFcn, class _EqualKey, class _Alloc>
 inline bool 
-operator!=(const hash_multimap<_Key,_Tp,_HF,_EqKey,_Alloc>& __hm1,
-           const hash_multimap<_Key,_Tp,_HF,_EqKey,_Alloc>& __hm2) {
-  return !(__hm1 == __hm2);
+operator!=(const hash_multiset<_Val,_HashFcn,_EqualKey,_Alloc>& __hs1,
+           const hash_multiset<_Val,_HashFcn,_EqualKey,_Alloc>& __hs2) {
+  return !(__hs1 == __hs2);
 }
 
-template <class _Key, class _Tp, class _HashFcn, class _EqlKey, class _Alloc>
+template <class _Val, class _HashFcn, class _EqualKey, class _Alloc>
 inline void 
-swap(hash_multimap<_Key,_Tp,_HashFcn,_EqlKey,_Alloc>& __hm1,
-     hash_multimap<_Key,_Tp,_HashFcn,_EqlKey,_Alloc>& __hm2)
-{
-  __hm1.swap(__hm2);
+swap(hash_multiset<_Val,_HashFcn,_EqualKey,_Alloc>& __hs1,
+     hash_multiset<_Val,_HashFcn,_EqualKey,_Alloc>& __hs2) {
+  __hs1.swap(__hs2);
 }
 
 #endif /* __STL_FUNCTION_TMPL_PARTIAL_ORDER */
 
-// Specialization of insert_iterator so that it will work for hash_map
-// and hash_multimap.
+// Specialization of insert_iterator so that it will work for hash_set
+// and hash_multiset.
 
 #ifdef __STL_CLASS_PARTIAL_SPECIALIZATION
 
-template <class _Key, class _Tp, class _HashFn,  class _EqKey, class _Alloc>
-class insert_iterator<hash_map<_Key, _Tp, _HashFn, _EqKey, _Alloc> > {
+template <class _Value, class _HashFcn, class _EqualKey, class _Alloc>
+class insert_iterator<hash_set<_Value, _HashFcn, _EqualKey, _Alloc> > {
 protected:
-  typedef hash_map<_Key, _Tp, _HashFn, _EqKey, _Alloc> _Container;
+  typedef hash_set<_Value, _HashFcn, _EqualKey, _Alloc> _Container;
   _Container* container;
 public:
   typedef _Container          container_type;
@@ -489,10 +464,10 @@ public:
   insert_iterator<_Container>& operator++(int) { return *this; }
 };
 
-template <class _Key, class _Tp, class _HashFn,  class _EqKey, class _Alloc>
-class insert_iterator<hash_multimap<_Key, _Tp, _HashFn, _EqKey, _Alloc> > {
+template <class _Value, class _HashFcn, class _EqualKey, class _Alloc>
+class insert_iterator<hash_multiset<_Value, _HashFcn, _EqualKey, _Alloc> > {
 protected:
-  typedef hash_multimap<_Key, _Tp, _HashFn, _EqKey, _Alloc> _Container;
+  typedef hash_multiset<_Value, _HashFcn, _EqualKey, _Alloc> _Container;
   _Container* container;
   typename _Container::iterator iter;
 public:
@@ -525,7 +500,7 @@ public:
 
 __STL_END_NAMESPACE
 
-#endif /* __SGI_STL_INTERNAL_HASH_MAP_H */
+#endif /* __SGI_STL_INTERNAL_HASH_SET_H */
 
 // Local Variables:
 // mode:C++
