@@ -65,17 +65,11 @@ template <class _Val, class _Key, class _HashFcn,
           class _ExtractKey, class _EqualKey, class _Alloc>
 struct _Hashtable_const_iterator;
 
-template <class _Val, class _Key, class _HashFcn,
-          class _ExtractKey, class _EqualKey, class _Alloc>
+template <class _Val, class _Key, class _HashFcn, class _ExtractKey, class _EqualKey, class _Alloc>
 struct _Hashtable_iterator {
-  typedef hashtable<_Val,_Key,_HashFcn,_ExtractKey,_EqualKey,_Alloc>
-          _Hashtable;
-  typedef _Hashtable_iterator<_Val, _Key, _HashFcn, 
-                              _ExtractKey, _EqualKey, _Alloc>
-          iterator;
-  typedef _Hashtable_const_iterator<_Val, _Key, _HashFcn, 
-                                    _ExtractKey, _EqualKey, _Alloc>
-          const_iterator;
+  typedef hashtable<_Val,_Key,_HashFcn,_ExtractKey,_EqualKey,_Alloc> _Hashtable;
+  typedef _Hashtable_iterator<_Val, _Key, _HashFcn, _ExtractKey, _EqualKey, _Alloc> iterator;
+  typedef _Hashtable_const_iterator<_Val, _Key, _HashFcn, _ExtractKey, _EqualKey, _Alloc> const_iterator;
   typedef _Hashtable_node<_Val> _Node;
 
   typedef forward_iterator_tag iterator_category;
@@ -85,11 +79,12 @@ struct _Hashtable_iterator {
   typedef _Val& reference;
   typedef _Val* pointer;
 
+  //迭代器目前所指之节点
   _Node* _M_cur;
+  //保持对容器的连接关系
   _Hashtable* _M_ht;
 
-  _Hashtable_iterator(_Node* __n, _Hashtable* __tab) 
-    : _M_cur(__n), _M_ht(__tab) {}
+  _Hashtable_iterator(_Node* __n, _Hashtable* __tab) : _M_cur(__n), _M_ht(__tab) {}
   _Hashtable_iterator() {}
   reference operator*() const { return _M_cur->_M_val; }
 #ifndef __SGI_STL_NO_ARROW_OPERATOR
@@ -145,8 +140,12 @@ struct _Hashtable_const_iterator {
 };
 
 // Note: assumes long is at least 32 bits.
+//虽然开链法(separate chaining)并不要求表格大小必须为质数，但SGI STL仍然以质数来设计表格大小，
+//并且先将28个质数（主键呈现大约两倍的关系）计算好，以备随时访问，
+//同时提供一个函数，用来查询在这28个质数之中，“最接近某数并大于某数”的质数。
 enum { __stl_num_primes = 28 };
 
+//假设long至少有32bits
 static const unsigned long __stl_prime_list[__stl_num_primes] =
 {
   53ul,         97ul,         193ul,       389ul,       769ul,
@@ -157,10 +156,12 @@ static const unsigned long __stl_prime_list[__stl_num_primes] =
   1610612741ul, 3221225473ul, 4294967291ul
 };
 
+//找出上述28个质数之中，最接近并大于或等于n的那个质数。
 inline unsigned long __stl_next_prime(unsigned long __n)
 {
   const unsigned long* __first = __stl_prime_list;
   const unsigned long* __last = __stl_prime_list + (int)__stl_num_primes;
+  //lower_bound()是泛型算法，使用lower_bound()，序列首先需要排序。
   const unsigned long* pos = lower_bound(__first, __last, __n);
   return pos == __last ? *(__last - 1) : *pos;
 }
@@ -183,8 +184,15 @@ bool operator==(const hashtable<_Val,_Key,_HF,_Ex,_Eq,_All>& __ht1,
 //  Additionally, a base class wouldn't serve any other purposes; it 
 //  wouldn't, for example, simplify the exception-handling code.
 
-template <class _Val, class _Key, class _HashFcn,
-          class _ExtractKey, class _EqualKey, class _Alloc>
+/*
+//Val:节点的实值型别。
+//Key:节点的键值型别。
+//HashFcn:hash function的函数型别。
+//ExtractKey:从节点中取出键值的方法（函数或仿函数）。
+//EqualKey:判断键值相同与否的方法（函数或仿函数）。
+//Alloc:空间配置器，默认使用std::alloc。
+*/
+template <class _Val, class _Key, class _HashFcn, class _ExtractKey, class _EqualKey, class _Alloc>
 class hashtable {
 public:
   typedef _Key key_type;
@@ -226,9 +234,12 @@ private:
 #endif /* __STL_USE_STD_ALLOCATORS */
 
 private:
+  //hasher,key_equal,ExtractKey都是function objects。<stl_hash_fun.h>中定义有数个标准型别（如int,c-style string等）的hasher
   hasher                _M_hash;
   key_equal             _M_equals;
   _ExtractKey           _M_get_key;
+
+  //以vector完成
   vector<_Node*,_Alloc> _M_buckets;
   size_type             _M_num_elements;
 
@@ -260,10 +271,7 @@ public:
     _M_initialize_buckets(__n);
   }
 
-  hashtable(size_type __n,
-            const _HashFcn&    __hf,
-            const _EqualKey&   __eql,
-            const allocator_type& __a = allocator_type())
+  hashtable(size_type __n, const _HashFcn& __hf, const _EqualKey& __eql, const allocator_type& __a = allocator_type())
     : __HASH_ALLOC_INIT(__a)
       _M_hash(__hf),
       _M_equals(__eql),
@@ -345,10 +353,11 @@ public:
 
 public:
 
+  //bucket个数即buckets vector的大小
   size_type bucket_count() const { return _M_buckets.size(); }
 
-  size_type max_bucket_count() const
-    { return __stl_prime_list[(int)__stl_num_primes - 1]; } 
+  //总共可以有多少buckets
+  size_type max_bucket_count() const { return __stl_prime_list[(int)__stl_num_primes - 1]; } 
 
   size_type elems_in_bucket(size_type __bucket) const
   {
@@ -360,10 +369,12 @@ public:
 
   pair<iterator, bool> insert_unique(const value_type& __obj)
   {
+    //判断是否需要重建表格，如果需要就扩充。
     resize(_M_num_elements + 1);
     return insert_unique_noresize(__obj);
   }
 
+  //允许重复插入
   iterator insert_equal(const value_type& __obj)
   {
     resize(_M_num_elements + 1);
@@ -464,12 +475,14 @@ public:
 
   iterator find(const key_type& __key) 
   {
+    //首先寻找落在哪一个bucket内
     size_type __n = _M_bkt_num_key(__key);
     _Node* __first;
-    for ( __first = _M_buckets[__n];
-          __first && !_M_equals(_M_get_key(__first->_M_val), __key);
-          __first = __first->_M_next)
-      {}
+    //从bucket list的头开始，一一对比每个元素的键值，对比成功就跳出
+    for ( __first = _M_buckets[__n]; __first && !_M_equals(_M_get_key(__first->_M_val), __key); __first = __first->_M_next)
+    {
+
+    }
     return iterator(__first, this);
   } 
 
@@ -486,9 +499,11 @@ public:
 
   size_type count(const key_type& __key) const
   {
+    //首先寻找落在哪一个bucket内
     const size_type __n = _M_bkt_num_key(__key);
     size_type __result = 0;
 
+    //从bucket list的头开始，一一对比每个元素的键值，对比成功就累加1
     for (const _Node* __cur = _M_buckets[__n]; __cur; __cur = __cur->_M_next)
       if (_M_equals(_M_get_key(__cur->_M_val), __key))
         ++__result;
@@ -517,8 +532,11 @@ private:
 
   void _M_initialize_buckets(size_type __n)
   {
+    //其中next_size()返回最接近n并大于或等于n的质数。
     const size_type __n_buckets = _M_next_size(__n);
+    //为buckets vector保留空间
     _M_buckets.reserve(__n_buckets);
+    //设定所有buckets的初值为0(null 指针)
     _M_buckets.insert(_M_buckets.end(), __n_buckets, (_Node*) 0);
     _M_num_elements = 0;
   }
@@ -528,6 +546,7 @@ private:
     return _M_bkt_num_key(__key, _M_buckets.size());
   }
 
+  //调用hash function取得一个可以执行modulus(取模)运算的值。
   size_type _M_bkt_num(const value_type& __obj) const
   {
     return _M_bkt_num_key(_M_get_key(__obj));
@@ -538,22 +557,27 @@ private:
     return _M_hash(__key) % __n;
   }
 
+  //判知元素的落脚处，计算某个元素值落脚于哪一个bucket之内
+  //有些元素型别无法直接拿来对hashtable的大小进行模运算，因此需要此函数包装
   size_type _M_bkt_num(const value_type& __obj, size_t __n) const
   {
     return _M_bkt_num_key(_M_get_key(__obj), __n);
   }
 
+  //节点配置函数
   _Node* _M_new_node(const value_type& __obj)
   {
     _Node* __n = _M_get_node();
     __n->_M_next = 0;
-    __STL_TRY {
+    __STL_TRY 
+    {
       construct(&__n->_M_val, __obj);
       return __n;
     }
     __STL_UNWIND(_M_put_node(__n));
   }
   
+  //节点释放函数
   void _M_delete_node(_Node* __n)
   {
     destroy(&__n->_M_val);
@@ -567,14 +591,18 @@ private:
 
 };
 
-template <class _Val, class _Key, class _HF, class _ExK, class _EqK, 
-          class _All>
+//hashtable迭代器必须永远维系着与整个"buckets vector"的关系，并记录目前所指的节点。
+
+template <class _Val, class _Key, class _HF, class _ExK, class _EqK, class _All>
 _Hashtable_iterator<_Val,_Key,_HF,_ExK,_EqK,_All>&
 _Hashtable_iterator<_Val,_Key,_HF,_ExK,_EqK,_All>::operator++()
 {
   const _Node* __old = _M_cur;
+  //其前进操作是首先尝试从目前所指节点出发，前进一个位置（节点）
   _M_cur = _M_cur->_M_next;
-  if (!_M_cur) {
+  //如果当前节点正巧是list的尾端，就跳至下一个bucket身上，指向下一个bucket的头部节点
+  if (!_M_cur) 
+  {
     size_type __bucket = _M_ht->_M_bkt_num(__old->_M_val);
     while (!_M_cur && ++__bucket < _M_ht->_M_buckets.size())
       _M_cur = _M_ht->_M_buckets[__bucket];
@@ -582,12 +610,12 @@ _Hashtable_iterator<_Val,_Key,_HF,_ExK,_EqK,_All>::operator++()
   return *this;
 }
 
-template <class _Val, class _Key, class _HF, class _ExK, class _EqK, 
-          class _All>
+template <class _Val, class _Key, class _HF, class _ExK, class _EqK, class _All>
 inline _Hashtable_iterator<_Val,_Key,_HF,_ExK,_EqK,_All>
 _Hashtable_iterator<_Val,_Key,_HF,_ExK,_EqK,_All>::operator++(int)
 {
   iterator __tmp = *this;
+  //调用operator++()
   ++*this;
   return __tmp;
 }
@@ -709,16 +737,19 @@ inline void swap(hashtable<_Val, _Key, _HF, _Extract, _EqKey, _All>& __ht1,
 
 template <class _Val, class _Key, class _HF, class _Ex, class _Eq, class _All>
 pair<typename hashtable<_Val,_Key,_HF,_Ex,_Eq,_All>::iterator, bool> 
-hashtable<_Val,_Key,_HF,_Ex,_Eq,_All>
-  ::insert_unique_noresize(const value_type& __obj)
+hashtable<_Val,_Key,_HF,_Ex,_Eq,_All>::insert_unique_noresize(const value_type& __obj)
 {
+  //决定obj应位于nbucket
   const size_type __n = _M_bkt_num(__obj);
+  //first指向bucket对应的串行头部
   _Node* __first = _M_buckets[__n];
 
   for (_Node* __cur = __first; __cur; __cur = __cur->_M_next) 
+    //如果发现插入键值与链表中的某键值相同，就不插入，立刻返回
     if (_M_equals(_M_get_key(__cur->_M_val), _M_get_key(__obj)))
       return pair<iterator, bool>(iterator(__cur, this), false);
 
+  //创建键值为插入值得信节点，令新节点称为链表的第一个节点
   _Node* __tmp = _M_new_node(__obj);
   __tmp->_M_next = __first;
   _M_buckets[__n] = __tmp;
@@ -728,14 +759,15 @@ hashtable<_Val,_Key,_HF,_Ex,_Eq,_All>
 
 template <class _Val, class _Key, class _HF, class _Ex, class _Eq, class _All>
 typename hashtable<_Val,_Key,_HF,_Ex,_Eq,_All>::iterator 
-hashtable<_Val,_Key,_HF,_Ex,_Eq,_All>
-  ::insert_equal_noresize(const value_type& __obj)
+hashtable<_Val,_Key,_HF,_Ex,_Eq,_All>::insert_equal_noresize(const value_type& __obj)
 {
   const size_type __n = _M_bkt_num(__obj);
   _Node* __first = _M_buckets[__n];
 
   for (_Node* __cur = __first; __cur; __cur = __cur->_M_next) 
-    if (_M_equals(_M_get_key(__cur->_M_val), _M_get_key(__obj))) {
+    //如果发现与链表中的某键值相同，就插在该值后面
+    if (_M_equals(_M_get_key(__cur->_M_val), _M_get_key(__obj))) 
+    {
       _Node* __tmp = _M_new_node(__obj);
       __tmp->_M_next = __cur->_M_next;
       __cur->_M_next = __tmp;
@@ -927,33 +959,51 @@ hashtable<_Val,_Key,_HF,_Ex,_Eq,_All>::erase(const const_iterator& __it)
                  const_cast<hashtable*>(__it._M_ht)));
 }
 
+//判断是否需要重建表格，如果不需要，立刻返回。如果需要，就重建。
 template <class _Val, class _Key, class _HF, class _Ex, class _Eq, class _All>
-void hashtable<_Val,_Key,_HF,_Ex,_Eq,_All>
-  ::resize(size_type __num_elements_hint)
+void hashtable<_Val,_Key,_HF,_Ex,_Eq,_All>::resize(size_type __num_elements_hint)
 {
   const size_type __old_n = _M_buckets.size();
-  if (__num_elements_hint > __old_n) {
+  //判断原则：元素个数（把新增元素计入后）和bucket vector的大小比，如果前者大于后者，就重建表格
+  //由此可判断，每个bucket(list)的最大容量和bucket vector的大小相同。
+  if (__num_elements_hint > __old_n) 
+  {
+    //找出下一个质数
     const size_type __n = _M_next_size(__num_elements_hint);
-    if (__n > __old_n) {
-      vector<_Node*, _All> __tmp(__n, (_Node*)(0),
-                                 _M_buckets.get_allocator());
-      __STL_TRY {
-        for (size_type __bucket = 0; __bucket < __old_n; ++__bucket) {
+    if (__n > __old_n) 
+    {
+      vector<_Node*, _All> __tmp(__n, (_Node*)(0), _M_buckets.get_allocator());
+      __STL_TRY 
+      {
+        //处理每个旧的bucket
+        for (size_type __bucket = 0; __bucket < __old_n; ++__bucket) 
+        {
+          //指向节点所对应的串行的起始节点
           _Node* __first = _M_buckets[__bucket];
-          while (__first) {
+          //处理每一个旧bucket所含（串行）的每一个节点
+          while (__first) 
+          {
+            //找出节点落在新buckets(tmp)的哪一个bucket中
             size_type __new_bucket = _M_bkt_num(__first->_M_val, __n);
+            //令就bucket指向其所对应的串行的下一个节点，用以迭代
             _M_buckets[__bucket] = __first->_M_next;
+            //将当前节点插入到新bucket中，成为其对应串行的第一个节点，也就是说新bucket与旧bucket的串行顺序相反。
             __first->_M_next = __tmp[__new_bucket];
             __tmp[__new_bucket] = __first;
+            //回到旧bucket所指的待处理的串行，准备处理下一个节点。
             __first = _M_buckets[__bucket];          
           }
         }
+        //新旧两个buckets对调，容器大小也会对调
         _M_buckets.swap(__tmp);
       }
 #         ifdef __STL_USE_EXCEPTIONS
-      catch(...) {
-        for (size_type __bucket = 0; __bucket < __tmp.size(); ++__bucket) {
-          while (__tmp[__bucket]) {
+      catch(...) 
+      {
+        for (size_type __bucket = 0; __bucket < __tmp.size(); ++__bucket) 
+        {
+          while (__tmp[__bucket]) 
+          {
             _Node* __next = __tmp[__bucket]->_M_next;
             _M_delete_node(__tmp[__bucket]);
             __tmp[__bucket] = __next;
@@ -1005,9 +1055,13 @@ void hashtable<_Val,_Key,_HF,_Ex,_Eq,_All>
 template <class _Val, class _Key, class _HF, class _Ex, class _Eq, class _All>
 void hashtable<_Val,_Key,_HF,_Ex,_Eq,_All>::clear()
 {
-  for (size_type __i = 0; __i < _M_buckets.size(); ++__i) {
+  //针对每一个bucket
+  for (size_type __i = 0; __i < _M_buckets.size(); ++__i) 
+  {
     _Node* __cur = _M_buckets[__i];
-    while (__cur != 0) {
+    //将bucket串行中的每个节点删除
+    while (__cur != 0) 
+    {
       _Node* __next = __cur->_M_next;
       _M_delete_node(__cur);
       __cur = __next;
@@ -1015,26 +1069,34 @@ void hashtable<_Val,_Key,_HF,_Ex,_Eq,_All>::clear()
     _M_buckets[__i] = 0;
   }
   _M_num_elements = 0;
+  //buckets vector并未释放掉空间，仍保有原来大小
 }
 
     
 template <class _Val, class _Key, class _HF, class _Ex, class _Eq, class _All>
-void hashtable<_Val,_Key,_HF,_Ex,_Eq,_All>
-  ::_M_copy_from(const hashtable& __ht)
+void hashtable<_Val,_Key,_HF,_Ex,_Eq,_All>::_M_copy_from(const hashtable& __ht)
 {
+  //先清除己方的buckets vector，将整个容器清空
   _M_buckets.clear();
+  //为己方的buckets vector保留空间，使与对方相同
   _M_buckets.reserve(__ht._M_buckets.size());
+  //从己方的buckets vector尾端开始，插入n个元素，其值为null指针
+  //此时bucket vector为空，所以所谓尾端，实际上是起始处
   _M_buckets.insert(_M_buckets.end(), __ht._M_buckets.size(), (_Node*) 0);
-  __STL_TRY {
-    for (size_type __i = 0; __i < __ht._M_buckets.size(); ++__i) {
+  __STL_TRY 
+  {
+    for (size_type __i = 0; __i < __ht._M_buckets.size(); ++__i) 
+    {
+      //复制vector的每一个元素（是个指针，指向hashtable节点）
       const _Node* __cur = __ht._M_buckets[__i];
-      if (__cur) {
+      if (__cur) 
+      {
         _Node* __copy = _M_new_node(__cur->_M_val);
         _M_buckets[__i] = __copy;
 
-        for (_Node* __next = __cur->_M_next; 
-             __next; 
-             __cur = __next, __next = __cur->_M_next) {
+        //针对同一个bucket list，复制每一个节点
+        for (_Node* __next = __cur->_M_next;  __next; __cur = __next, __next = __cur->_M_next) 
+        {
           __copy->_M_next = _M_new_node(__next->_M_val);
           __copy = __copy->_M_next;
         }

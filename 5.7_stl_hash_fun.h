@@ -37,6 +37,13 @@ __STL_BEGIN_NAMESPACE
 
 template <class _Key> struct hash { };
 
+/*
+/<stl_hash_fun.h>定义有数个现成的hash function，全是仿函数
+/hash function是计算元素位置的函数，SGI将这项任务赋予了先前提到过的bkt_num()，再由它来调用这里提供的hash function
+/取得一个可以对hashtable进行模运算的值
+/针对char，int，long等整数型别，这里大部分的hash function什么也没做，只是忠诚的返回原值。
+/但对于字符字符串(const char*)，就设计了一个转换函数
+*/
 inline size_t __stl_hash_string(const char* __s)
 {
   unsigned long __h = 0; 
