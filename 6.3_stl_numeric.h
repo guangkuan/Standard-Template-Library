@@ -38,24 +38,27 @@ template <class _InputIterator, class _Tp>
 _Tp accumulate(_InputIterator __first, _InputIterator __last, _Tp __init)
 {
   __STL_REQUIRES(_InputIterator, _InputIterator);
+  //将每个元素累加到初值init身上
   for ( ; __first != __last; ++__first)
     __init = __init + *__first;
   return __init;
 }
 
 template <class _InputIterator, class _Tp, class _BinaryOperation>
-_Tp accumulate(_InputIterator __first, _InputIterator __last, _Tp __init,
-               _BinaryOperation __binary_op)
+_Tp accumulate(_InputIterator __first, _InputIterator __last, _Tp __init, _BinaryOperation __binary_op)
 {
   __STL_REQUIRES(_InputIterator, _InputIterator);
+  //对每一个元素执行二元操作
   for ( ; __first != __last; ++__first)
     __init = __binary_op(__init, *__first);
   return __init;
 }
 
+// 算法inner_product能够计算[first1, last1)和[first2, first2 + (last1 - first1))的一般内积
+// 将两个区间的内积结果加上init。先将结果初始化为init，然后针对[first1, last1)的每一个迭代器i，
+// 由头至尾依序执行result = result + (*i) * *(first2 + (i - first1))。
 template <class _InputIterator1, class _InputIterator2, class _Tp>
-_Tp inner_product(_InputIterator1 __first1, _InputIterator1 __last1,
-                  _InputIterator2 __first2, _Tp __init)
+_Tp inner_product(_InputIterator1 __first1, _InputIterator1 __last1, _InputIterator2 __first2, _Tp __init)
 {
   __STL_REQUIRES(_InputIterator2, _InputIterator);
   __STL_REQUIRES(_InputIterator2, _InputIterator);
@@ -64,12 +67,9 @@ _Tp inner_product(_InputIterator1 __first1, _InputIterator1 __last1,
   return __init;
 }
 
-template <class _InputIterator1, class _InputIterator2, class _Tp,
-          class _BinaryOperation1, class _BinaryOperation2>
-_Tp inner_product(_InputIterator1 __first1, _InputIterator1 __last1,
-                  _InputIterator2 __first2, _Tp __init, 
-                  _BinaryOperation1 __binary_op1,
-                  _BinaryOperation2 __binary_op2)
+// 第二版本以外界提供的仿函数取代operator+和operator*。
+template <class _InputIterator1, class _InputIterator2, class _Tp, class _BinaryOperation1, class _BinaryOperation2>
+_Tp inner_product(_InputIterator1 __first1, _InputIterator1 __last1, _InputIterator2 __first2, _Tp __init, _BinaryOperation1 __binary_op1, _BinaryOperation2 __binary_op2)
 {
   __STL_REQUIRES(_InputIterator2, _InputIterator);
   __STL_REQUIRES(_InputIterator2, _InputIterator);
@@ -78,13 +78,14 @@ _Tp inner_product(_InputIterator1 __first1, _InputIterator1 __last1,
   return __init;
 }
 
+// partial_sum用来计算局部总和。它会将*first赋值给*result，将*first和*(first + 1)的和赋值给*(result + 1)，以此类推。
+// 如果加法与减法的定义一如常规定义，那么partial_sum和adjacent_difference互为逆运算。
 template <class _InputIterator, class _OutputIterator, class _Tp>
-_OutputIterator 
-__partial_sum(_InputIterator __first, _InputIterator __last,
-              _OutputIterator __result, _Tp*)
+_OutputIterator __partial_sum(_InputIterator __first, _InputIterator __last, _OutputIterator __result, _Tp*)
 {
   _Tp __value = *__first;
-  while (++__first != __last) {
+  while (++__first != __last) 
+  {
     __value = __value + *__first;
     *++__result = __value;
   }
@@ -92,13 +93,13 @@ __partial_sum(_InputIterator __first, _InputIterator __last,
 }
 
 template <class _InputIterator, class _OutputIterator>
-_OutputIterator 
-partial_sum(_InputIterator __first, _InputIterator __last,
-            _OutputIterator __result)
+_OutputIterator partial_sum(_InputIterator __first, _InputIterator __last, _OutputIterator __result)
 {
   __STL_REQUIRES(_InputIterator, _InputIterator);
   __STL_REQUIRES(_OutputIterator, _OutputIterator);
-  if (__first == __last) return __result;
+  if (__first == __last) 
+    return __result;
+  //result为ostream_iterator，记录第一个元素
   *__result = *__first;
   return __partial_sum(__first, __last, __result, __VALUE_TYPE(__first));
 }
@@ -130,13 +131,15 @@ partial_sum(_InputIterator __first, _InputIterator __last,
                        __binary_op);
 }
 
+// 计算[first, last)中相邻元素的差额。“储存第一个元素的值，然后存储元素的差值”
+// 将*first赋值给*result，并针对[first + 1, last)内的每个迭代器i，将*i - *(i - 1)的结果赋值给*(result + (i - first))。
+// __result的类型是ostream_iterator
 template <class _InputIterator, class _OutputIterator, class _Tp>
-_OutputIterator 
-__adjacent_difference(_InputIterator __first, _InputIterator __last,
-                      _OutputIterator __result, _Tp*)
+_OutputIterator __adjacent_difference(_InputIterator __first, _InputIterator __last, _OutputIterator __result, _Tp*)
 {
   _Tp __value = *__first;
-  while (++__first != __last) {
+  while (++__first != __last) 
+  {
     _Tp __tmp = *__first;
     *++__result = __tmp - __value;
     __value = __tmp;
@@ -145,26 +148,24 @@ __adjacent_difference(_InputIterator __first, _InputIterator __last,
 }
 
 template <class _InputIterator, class _OutputIterator>
-_OutputIterator
-adjacent_difference(_InputIterator __first,
-                    _InputIterator __last, _OutputIterator __result)
+_OutputIterator adjacent_difference(_InputIterator __first, _InputIterator __last, _OutputIterator __result)
 {
   __STL_REQUIRES(_InputIterator, _InputIterator);
   __STL_REQUIRES(_OutputIterator, _OutputIterator);
-  if (__first == __last) return __result;
+  if (__first == __last) 
+    return __result;
+  //记录第一个元素
   *__result = *__first;
-  return __adjacent_difference(__first, __last, __result,
-                               __VALUE_TYPE(__first));
+  return __adjacent_difference(__first, __last, __result, __VALUE_TYPE(__first));
 }
 
-template <class _InputIterator, class _OutputIterator, class _Tp, 
-          class _BinaryOperation>
-_OutputIterator
-__adjacent_difference(_InputIterator __first, _InputIterator __last, 
-                      _OutputIterator __result, _Tp*,
-                      _BinaryOperation __binary_op) {
+// 第二版采用外界提供的二元仿函数_BinaryOperation
+template <class _InputIterator, class _OutputIterator, class _Tp, class _BinaryOperation>
+_OutputIterator __adjacent_difference(_InputIterator __first, _InputIterator __last, _OutputIterator __result, _Tp*, _BinaryOperation __binary_op) 
+{
   _Tp __value = *__first;
-  while (++__first != __last) {
+  while (++__first != __last) 
+  {
     _Tp __tmp = *__first;
     *++__result = __binary_op(__tmp, __value);
     __value = __tmp;
@@ -173,37 +174,36 @@ __adjacent_difference(_InputIterator __first, _InputIterator __last,
 }
 
 template <class _InputIterator, class _OutputIterator, class _BinaryOperation>
-_OutputIterator 
-adjacent_difference(_InputIterator __first, _InputIterator __last,
-                    _OutputIterator __result, _BinaryOperation __binary_op)
+_OutputIterator adjacent_difference(_InputIterator __first, _InputIterator __last, _OutputIterator __result, _BinaryOperation __binary_op)
 {
   __STL_REQUIRES(_InputIterator, _InputIterator);
   __STL_REQUIRES(_OutputIterator, _OutputIterator);
   if (__first == __last) return __result;
   *__result = *__first;
-  return __adjacent_difference(__first, __last, __result,
-                               __VALUE_TYPE(__first),
-                               __binary_op);
+  return __adjacent_difference(__first, __last, __result, __VALUE_TYPE(__first), __binary_op);
 }
 
 // Returns __x ** __n, where __n >= 0.  _Note that "multiplication"
 // is required to be associative, but not necessarily commutative.
 
- 
+// 版本二，幂次方
 template <class _Tp, class _Integer, class _MonoidOperation>
 _Tp __power(_Tp __x, _Integer __n, _MonoidOperation __opr)
 {
   if (__n == 0)
     return identity_element(__opr);
-  else {
-    while ((__n & 1) == 0) {
+  else 
+  {
+    while ((__n & 1) == 0) 
+    {
       __n >>= 1;
       __x = __opr(__x, __x);
     }
 
     _Tp __result = __x;
     __n >>= 1;
-    while (__n != 0) {
+    while (__n != 0) 
+    {
       __x = __opr(__x, __x);
       if ((__n & 1) != 0)
         __result = __opr(__result, __x);
@@ -213,6 +213,7 @@ _Tp __power(_Tp __x, _Integer __n, _MonoidOperation __opr)
   }
 }
 
+// 版本一，乘幂
 template <class _Tp, class _Integer>
 inline _Tp __power(_Tp __x, _Integer __n)
 {
@@ -236,9 +237,9 @@ inline _Tp power(_Tp __x, _Integer __n)
 
 // iota is not part of the C++ standard.  It is an extension.
 
+// 用来设定某个区间的内容，使其内的每一个元素从指定的value开始，呈现递增状态。
 template <class _ForwardIter, class _Tp>
-void 
-iota(_ForwardIter __first, _ForwardIter __last, _Tp __value)
+void iota(_ForwardIter __first, _ForwardIter __last, _Tp __value)
 {
   __STL_REQUIRES(_ForwardIter, _Mutable_ForwardIterator);
   __STL_CONVERTIBLE(_Tp, typename iterator_traits<_ForwardIter>::value_type);
