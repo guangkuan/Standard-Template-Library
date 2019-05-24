@@ -68,26 +68,29 @@ __STL_BEGIN_NAMESPACE
 
 // swap and iter_swap
 
+// 将两个ForwardIterator所指的对象对调
 template <class _ForwardIter1, class _ForwardIter2, class _Tp>
-inline void __iter_swap(_ForwardIter1 __a, _ForwardIter2 __b, _Tp*) {
+inline void __iter_swap(_ForwardIter1 __a, _ForwardIter2 __b, _Tp*) 
+{
   _Tp __tmp = *__a;
   *__a = *__b;
   *__b = __tmp;
 }
 
 template <class _ForwardIter1, class _ForwardIter2>
-inline void iter_swap(_ForwardIter1 __a, _ForwardIter2 __b) {
+inline void iter_swap(_ForwardIter1 __a, _ForwardIter2 __b) 
+{
   __STL_REQUIRES(_ForwardIter1, _Mutable_ForwardIterator);
   __STL_REQUIRES(_ForwardIter2, _Mutable_ForwardIterator);
-  __STL_CONVERTIBLE(typename iterator_traits<_ForwardIter1>::value_type,
-                    typename iterator_traits<_ForwardIter2>::value_type);
-  __STL_CONVERTIBLE(typename iterator_traits<_ForwardIter2>::value_type,
-                    typename iterator_traits<_ForwardIter1>::value_type);
+  __STL_CONVERTIBLE(typename iterator_traits<_ForwardIter1>::value_type, typename iterator_traits<_ForwardIter2>::value_type);
+  __STL_CONVERTIBLE(typename iterator_traits<_ForwardIter2>::value_type, typename iterator_traits<_ForwardIter1>::value_type);
   __iter_swap(__a, __b, __VALUE_TYPE(__a));
 }
 
+// 对调两个对象的内容
 template <class _Tp>
-inline void swap(_Tp& __a, _Tp& __b) {
+inline void swap(_Tp& __a, _Tp& __b) 
+{
   __STL_REQUIRES(_Tp, _Assignable);
   _Tp __tmp = __a;
   __a = __b;
@@ -103,13 +106,16 @@ inline void swap(_Tp& __a, _Tp& __b) {
 #undef max
 
 template <class _Tp>
-inline const _Tp& min(const _Tp& __a, const _Tp& __b) {
+inline const _Tp& min(const _Tp& __a, const _Tp& __b) 
+{
   __STL_REQUIRES(_Tp, _LessThanComparable);
   return __b < __a ? __b : __a;
 }
 
+// 取两个对象中的较大值。版本一使用对象型别T所提供的_LessThanComparable
 template <class _Tp>
-inline const _Tp& max(const _Tp& __a, const _Tp& __b) {
+inline const _Tp& max(const _Tp& __a, const _Tp& __b) 
+{
   __STL_REQUIRES(_Tp, _LessThanComparable);
   return  __a < __b ? __b : __a;
 }
@@ -117,12 +123,15 @@ inline const _Tp& max(const _Tp& __a, const _Tp& __b) {
 #endif /* __BORLANDC__ */
 
 template <class _Tp, class _Compare>
-inline const _Tp& min(const _Tp& __a, const _Tp& __b, _Compare __comp) {
+inline const _Tp& min(const _Tp& __a, const _Tp& __b, _Compare __comp) 
+{
   return __comp(__b, __a) ? __b : __a;
 }
 
+// 版本二使用对象型别T所提供的_Compare
 template <class _Tp, class _Compare>
-inline const _Tp& max(const _Tp& __a, const _Tp& __b, _Compare __comp) {
+inline const _Tp& max(const _Tp& __a, const _Tp& __b, _Compare __comp) 
+{
   return __comp(__a, __b) ? __b : __a;
 }
 
@@ -135,22 +144,23 @@ inline const _Tp& max(const _Tp& __a, const _Tp& __b, _Compare __comp) {
 // (2) If we're using random access iterators, then write the loop as
 // a for loop with an explicit count.
 
+// 3.1 InputIterator版本
 template <class _InputIter, class _OutputIter, class _Distance>
-inline _OutputIter __copy(_InputIter __first, _InputIter __last,
-                          _OutputIter __result,
-                          input_iterator_tag, _Distance*)
+inline _OutputIter __copy(_InputIter __first, _InputIter __last, _OutputIter __result, input_iterator_tag, _Distance*)
 {
+  // 以迭代器等同与否，决定循环是否继续。速度慢
   for ( ; __first != __last; ++__result, ++__first)
     *__result = *__first;
   return __result;
 }
 
+// 3.2 RandomAccessIterator版本
 template <class _RandomAccessIter, class _OutputIter, class _Distance>
-inline _OutputIter
-__copy(_RandomAccessIter __first, _RandomAccessIter __last,
-       _OutputIter __result, random_access_iterator_tag, _Distance*)
+inline _OutputIter __copy(_RandomAccessIter __first, _RandomAccessIter __last, _OutputIter __result, random_access_iterator_tag, _Distance*)
 {
-  for (_Distance __n = __last - __first; __n > 0; --__n) {
+  // 以n决定循环的执行次数。速度快
+  for (_Distance __n = __last - __first; __n > 0; --__n) 
+  {
     *__result = *__first;
     ++__first;
     ++__result;
@@ -159,58 +169,64 @@ __copy(_RandomAccessIter __first, _RandomAccessIter __last,
 }
 
 template <class _Tp>
-inline _Tp*
-__copy_trivial(const _Tp* __first, const _Tp* __last, _Tp* __result) {
+inline _Tp* __copy_trivial(const _Tp* __first, const _Tp* __last, _Tp* __result) 
+{
   memmove(__result, __first, sizeof(_Tp) * (__last - __first));
   return __result + (__last - __first);
 }
 
 #if defined(__STL_FUNCTION_TMPL_PARTIAL_ORDER)
 
+// 6.1
+// 以下版本使用于“指针所指之对象具备non-trivial assignment operator”
 template <class _InputIter, class _OutputIter>
-inline _OutputIter __copy_aux2(_InputIter __first, _InputIter __last,
-                               _OutputIter __result, __false_type) {
-  return __copy(__first, __last, __result,
-                __ITERATOR_CATEGORY(__first),
-                __DISTANCE_TYPE(__first));
+inline _OutputIter __copy_aux2(_InputIter __first, _InputIter __last, _OutputIter __result, __false_type) 
+{
+  return __copy(__first, __last, __result, __ITERATOR_CATEGORY(__first), __DISTANCE_TYPE(__first));
 }
 
+// 6.2
 template <class _InputIter, class _OutputIter>
-inline _OutputIter __copy_aux2(_InputIter __first, _InputIter __last,
-                               _OutputIter __result, __true_type) {
-  return __copy(__first, __last, __result,
-                __ITERATOR_CATEGORY(__first),
-                __DISTANCE_TYPE(__first));
+inline _OutputIter __copy_aux2(_InputIter __first, _InputIter __last, _OutputIter __result, __true_type) 
+{
+  return __copy(__first, __last, __result, __ITERATOR_CATEGORY(__first), __DISTANCE_TYPE(__first));
 }
 
 #ifndef __USLC__
 
+// 6.3
+// 以下版本使用于“指针所指之对象具备trivial assignment operator”
 template <class _Tp>
-inline _Tp* __copy_aux2(_Tp* __first, _Tp* __last, _Tp* __result,
-                        __true_type) {
+inline _Tp* __copy_aux2(_Tp* __first, _Tp* __last, _Tp* __result, __true_type) 
+{
   return __copy_trivial(__first, __last, __result);
 }
 
 #endif /* __USLC__ */
 
+// 6.4
 template <class _Tp>
-inline _Tp* __copy_aux2(const _Tp* __first, const _Tp* __last, _Tp* __result,
-                        __true_type) {
+inline _Tp* __copy_aux2(const _Tp* __first, const _Tp* __last, _Tp* __result, __true_type) 
+{
   return __copy_trivial(__first, __last, __result);
 }
 
-
+// 5
+// 进一步探测“指针所指之物是否具有trivial assignment operator（平凡赋值操作符）”
+// 这一点对效率的影响不小，因为这里的复制操作是由assignment操作符（拷贝赋值）负责，
+// 如果指针所指对象拥有non-trivial assignment operator（显示，自定义），复制操作就一定得通过它来进行。
+// 但如果指针所指对象拥有的是trivial assignment operator（默认），复制操作可以不通过它，直接一最快速的内存对拷贝方式(memmove())完成。
 template <class _InputIter, class _OutputIter, class _Tp>
-inline _OutputIter __copy_aux(_InputIter __first, _InputIter __last,
-                              _OutputIter __result, _Tp*) {
-  typedef typename __type_traits<_Tp>::has_trivial_assignment_operator
-          _Trivial;
+inline _OutputIter __copy_aux(_InputIter __first, _InputIter __last, _OutputIter __result, _Tp*) 
+{
+  typedef typename __type_traits<_Tp>::has_trivial_assignment_operator _Trivial;
   return __copy_aux2(__first, __last, __result, _Trivial());
 }
 
+// 4
 template <class _InputIter, class _OutputIter>
-inline _OutputIter copy(_InputIter __first, _InputIter __last,
-                        _OutputIter __result) {
+inline _OutputIter copy(_InputIter __first, _InputIter __last, _OutputIter __result) 
+{
   __STL_REQUIRES(_InputIter, _InputIterator);
   __STL_REQUIRES(_OutputIter, _OutputIterator);
   return __copy_aux(__first, __last, __result, __VALUE_TYPE(__first));
@@ -220,42 +236,49 @@ inline _OutputIter copy(_InputIter __first, _InputIter __last,
 // but do have partial specialization of class templates.
 #elif defined(__STL_CLASS_PARTIAL_SPECIALIZATION)
 
+// 2.1 完全泛化版
+// _copy_dispatch()的完全泛化版根据迭代器种类的不同(_Category)，调用了不同的_copy()，
+// 为的是不同种类的迭代器所是要弄个的循环条件不同，有快慢之别。
 template <class _InputIter, class _OutputIter, class _BoolType>
 struct __copy_dispatch {
-  static _OutputIter copy(_InputIter __first, _InputIter __last,
-                          _OutputIter __result) {
+  static _OutputIter copy(_InputIter __first, _InputIter __last, _OutputIter __result) 
+  {
     typedef typename iterator_traits<_InputIter>::iterator_category _Category;
     typedef typename iterator_traits<_InputIter>::difference_type _Distance;
     return __copy(__first, __last, __result, _Category(), (_Distance*) 0);
   }
 };
 
+// 参数为原声指针形式，
+// 2.2 偏特化版本(1)，两个参数都是T*指针形式
 template <class _Tp>
 struct __copy_dispatch<_Tp*, _Tp*, __true_type>
 {
-  static _Tp* copy(const _Tp* __first, const _Tp* __last, _Tp* __result) {
+  static _Tp* copy(const _Tp* __first, const _Tp* __last, _Tp* __result) 
+  {
     return __copy_trivial(__first, __last, __result);
   }
 };
 
+// 2.3 偏特化版本(2)，第一参数为const T*指针形式，第二参数为T*指针形式
 template <class _Tp>
 struct __copy_dispatch<const _Tp*, _Tp*, __true_type>
 {
-  static _Tp* copy(const _Tp* __first, const _Tp* __last, _Tp* __result) {
+  static _Tp* copy(const _Tp* __first, const _Tp* __last, _Tp* __result) 
+  {
     return __copy_trivial(__first, __last, __result);
   }
 };
 
+// 1. 完全泛化版本
 template <class _InputIter, class _OutputIter>
-inline _OutputIter copy(_InputIter __first, _InputIter __last,
-                        _OutputIter __result) {
+inline _OutputIter copy(_InputIter __first, _InputIter __last, _OutputIter __result) 
+{
   __STL_REQUIRES(_InputIter, _InputIterator);
   __STL_REQUIRES(_OutputIter, _OutputIterator);
   typedef typename iterator_traits<_InputIter>::value_type _Tp;
-  typedef typename __type_traits<_Tp>::has_trivial_assignment_operator
-          _Trivial;
-  return __copy_dispatch<_InputIter, _OutputIter, _Trivial>
-    ::copy(__first, __last, __result);
+  typedef typename __type_traits<_Tp>::has_trivial_assignment_operator _Trivial;
+  return __copy_dispatch<_InputIter, _OutputIter, _Trivial>::copy(__first, __last, __result);
 }
 
 // Fallback for compilers with neither partial ordering nor partial
@@ -432,16 +455,19 @@ copy_n(_InputIter __first, _Size __count, _OutputIter __result) {
 //--------------------------------------------------
 // fill and fill_n
 
-
+// 将[first, last)内的所有元素改填新值
 template <class _ForwardIter, class _Tp>
-void fill(_ForwardIter __first, _ForwardIter __last, const _Tp& __value) {
+void fill(_ForwardIter __first, _ForwardIter __last, const _Tp& __value) 
+{
   __STL_REQUIRES(_ForwardIter, _Mutable_ForwardIterator);
   for ( ; __first != __last; ++__first)
     *__first = __value;
 }
 
+// 将[first, last)内的前n个元素改填新值，返回的迭代器指向被填入的最后一个元素的下一个位置。
 template <class _OutputIter, class _Size, class _Tp>
-_OutputIter fill_n(_OutputIter __first, _Size __n, const _Tp& __value) {
+_OutputIter fill_n(_OutputIter __first, _Size __n, const _Tp& __value) 
+{
   __STL_REQUIRES(_OutputIter, _OutputIterator);
   for ( ; __n > 0; --__n, ++__first)
     *__first = __value;
@@ -495,23 +521,25 @@ inline char* fill_n(char* __first, _Size __n, const char& __c) {
 //--------------------------------------------------
 // equal and mismatch
 
+// 比较两个序列，指出两者之间的第一个不匹配点。返回一对迭代器，分别指出向两序列中的不匹配点。
+// 如果第二序列的元素个数比第一序列少，会发生为可预期的行为。
+// 默认使用equality操作符来比较元素。
 template <class _InputIter1, class _InputIter2>
-pair<_InputIter1, _InputIter2> mismatch(_InputIter1 __first1,
-                                        _InputIter1 __last1,
-                                        _InputIter2 __first2) {
+pair<_InputIter1, _InputIter2> mismatch(_InputIter1 __first1, _InputIter1 __last1, _InputIter2 __first2) 
+{
   __STL_REQUIRES(_InputIter1, _InputIterator);
   __STL_REQUIRES(_InputIter2, _InputIterator);
-  __STL_REQUIRES(typename iterator_traits<_InputIter1>::value_type,
-                 _EqualityComparable);
-  __STL_REQUIRES(typename iterator_traits<_InputIter2>::value_type,
-                 _EqualityComparable);
-  while (__first1 != __last1 && *__first1 == *__first2) {
+  __STL_REQUIRES(typename iterator_traits<_InputIter1>::value_type, _EqualityComparable);
+  __STL_REQUIRES(typename iterator_traits<_InputIter2>::value_type, _EqualityComparable);
+  while (__first1 != __last1 && *__first1 == *__first2) 
+  {
     ++__first1;
     ++__first2;
   }
   return pair<_InputIter1, _InputIter2>(__first1, __first2);
 }
 
+// 第二版本允许用户指定比较操作
 template <class _InputIter1, class _InputIter2, class _BinaryPredicate>
 pair<_InputIter1, _InputIter2> mismatch(_InputIter1 __first1,
                                         _InputIter1 __last1,
@@ -526,24 +554,25 @@ pair<_InputIter1, _InputIter2> mismatch(_InputIter1 __first1,
   return pair<_InputIter1, _InputIter2>(__first1, __first2);
 }
 
+// 如果两个序列在[first, last)区间内相等，equal()返回true。
+// 如果第二序列的元素比较多，多出来的元素不予考虑。如果第二序列的元素比第一序列少，这个算法内部进行迭代行为时，会超越序列的尾端，造成不可预测的结果。
 template <class _InputIter1, class _InputIter2>
-inline bool equal(_InputIter1 __first1, _InputIter1 __last1,
-                  _InputIter2 __first2) {
+inline bool equal(_InputIter1 __first1, _InputIter1 __last1, _InputIter2 __first2) 
+{
   __STL_REQUIRES(_InputIter1, _InputIterator);
   __STL_REQUIRES(_InputIter2, _InputIterator);
-  __STL_REQUIRES(typename iterator_traits<_InputIter1>::value_type,
-                 _EqualityComparable);
-  __STL_REQUIRES(typename iterator_traits<_InputIter2>::value_type,
-                 _EqualityComparable);
+  __STL_REQUIRES(typename iterator_traits<_InputIter1>::value_type, _EqualityComparable);
+  __STL_REQUIRES(typename iterator_traits<_InputIter2>::value_type, _EqualityComparable);
   for ( ; __first1 != __last1; ++__first1, ++__first2)
     if (*__first1 != *__first2)
       return false;
   return true;
 }
 
+// 第二个版本允许我们指定仿函数_BinaryPredicate作为比较依据
 template <class _InputIter1, class _InputIter2, class _BinaryPredicate>
-inline bool equal(_InputIter1 __first1, _InputIter1 __last1,
-                  _InputIter2 __first2, _BinaryPredicate __binary_pred) {
+inline bool equal(_InputIter1 __first1, _InputIter1 __last1, _InputIter2 __first2, _BinaryPredicate __binary_pred) 
+{
   __STL_REQUIRES(_InputIter1, _InputIterator);
   __STL_REQUIRES(_InputIter2, _InputIterator);
   for ( ; __first1 != __last1; ++__first1, ++__first2)
@@ -556,33 +585,36 @@ inline bool equal(_InputIter1 __first1, _InputIter1 __last1,
 // lexicographical_compare and lexicographical_compare_3way.
 // (the latter is not part of the C++ standard.)
 
+// 以“字典排列方式”对两个序列[first1, last1)和[first2, last2)进行比较。
 template <class _InputIter1, class _InputIter2>
-bool lexicographical_compare(_InputIter1 __first1, _InputIter1 __last1,
-                             _InputIter2 __first2, _InputIter2 __last2) {
+bool lexicographical_compare(_InputIter1 __first1, _InputIter1 __last1, _InputIter2 __first2, _InputIter2 __last2) 
+{
   __STL_REQUIRES(_InputIter1, _InputIterator);
   __STL_REQUIRES(_InputIter2, _InputIterator);
-  __STL_REQUIRES(typename iterator_traits<_InputIter1>::value_type,
-                 _LessThanComparable);
-  __STL_REQUIRES(typename iterator_traits<_InputIter2>::value_type,
-                 _LessThanComparable);
-  for ( ; __first1 != __last1 && __first2 != __last2
-        ; ++__first1, ++__first2) {
+  __STL_REQUIRES(typename iterator_traits<_InputIter1>::value_type, _LessThanComparable);
+  __STL_REQUIRES(typename iterator_traits<_InputIter2>::value_type, _LessThanComparable);
+  for ( ; __first1 != __last1 && __first2 != __last2 ; ++__first1, ++__first2) 
+  {
+    // 第一序列元素值小于第二序列的相应元素值
     if (*__first1 < *__first2)
       return true;
+    // 第二序列元素值小于第一序列的相应元素值
     if (*__first2 < *__first1)
       return false;
   }
+  // 如果第一序列到达尾端而第二序列尚有余额，那么第一序列小于第二序列
   return __first1 == __last1 && __first2 != __last2;
 }
 
+// 第二版本允许你指定一个仿函数comp用来比较
 template <class _InputIter1, class _InputIter2, class _Compare>
 bool lexicographical_compare(_InputIter1 __first1, _InputIter1 __last1,
                              _InputIter2 __first2, _InputIter2 __last2,
                              _Compare __comp) {
   __STL_REQUIRES(_InputIter1, _InputIterator);
   __STL_REQUIRES(_InputIter2, _InputIterator);
-  for ( ; __first1 != __last1 && __first2 != __last2
-        ; ++__first1, ++__first2) {
+  for ( ; __first1 != __last1 && __first2 != __last2; ++__first1, ++__first2) 
+  {
     if (__comp(*__first1, *__first2))
       return true;
     if (__comp(*__first2, *__first1))
@@ -591,14 +623,12 @@ bool lexicographical_compare(_InputIter1 __first1, _InputIter1 __last1,
   return __first1 == __last1 && __first2 != __last2;
 }
 
-inline bool 
-lexicographical_compare(const unsigned char* __first1,
-                        const unsigned char* __last1,
-                        const unsigned char* __first2,
-                        const unsigned char* __last2)
+// 用于原声指针const unsigned char*
+inline bool lexicographical_compare(const unsigned char* __first1, const unsigned char* __last1, const unsigned char* __first2, const unsigned char* __last2)
 {
   const size_t __len1 = __last1 - __first1;
   const size_t __len2 = __last2 - __first2;
+  // memcmp()是C标准函数，以unsigned char的方式比较两序列中一一对应的每一个bytes。
   const int __result = memcmp(__first1, __first2, min(__len1, __len2));
   return __result != 0 ? __result < 0 : __len1 < __len2;
 }
