@@ -83,8 +83,13 @@ __median(const _Tp& __a, const _Tp& __b, const _Tp& __c, _Compare __comp) {
 }
 
 // for_each.  Apply a function to every element of a range.
+// 将仿函数f施行于[first, last)区间的每一个元素身上。
+// 因为first和last都是_InputIter，不保证接收赋值行为，f不可以改变元素内容。
+// 如果想要一一修改元素内容，应该使用算法transform()。
+// f可以返回一个值，但该值会被忽略。
 template <class _InputIter, class _Function>
-_Function for_each(_InputIter __first, _InputIter __last, _Function __f) {
+_Function for_each(_InputIter __first, _InputIter __last, _Function __f) 
+{
   __STL_REQUIRES(_InputIter, _InputIterator);
   for ( ; __first != __last; ++__first)
     __f(*__first);
@@ -93,6 +98,8 @@ _Function for_each(_InputIter __first, _InputIter __last, _Function __f) {
 
 // find and find_if.
 
+// 根据equality操作符，循序查找[first, last)内所有的元素，找出第一个匹配“等同(equality)条件”者。
+// 如果找到，就返回一个inputterator指向该元素，否则返回迭代器last。
 template <class _InputIter, class _Tp>
 inline _InputIter find(_InputIter __first, _InputIter __last, const _Tp& __val, input_iterator_tag)
 {
@@ -101,10 +108,10 @@ inline _InputIter find(_InputIter __first, _InputIter __last, const _Tp& __val, 
   return __first;
 }
 
+// 根据指定的pred运算条件（以仿函数表示），循序查找[first, last)内所有的元素，找出第一个令pred运算结果为true者。
+// 如果找到，就返回一个inputterator指向该元素，否则返回迭代器last。
 template <class _InputIter, class _Predicate>
-inline _InputIter find_if(_InputIter __first, _InputIter __last,
-                          _Predicate __pred,
-                          input_iterator_tag)
+inline _InputIter find_if(_InputIter __first, _InputIter __last, _Predicate __pred, input_iterator_tag)
 {
   while (__first != __last && !__pred(*__first))
     ++__first;
@@ -191,13 +198,12 @@ _RandomAccessIter find_if(_RandomAccessIter __first, _RandomAccessIter __last,
 
 #endif /* __STL_CLASS_PARTIAL_SPECIALIZATION */
 
+// 完全泛化版
 template <class _InputIter, class _Tp>
-inline _InputIter find(_InputIter __first, _InputIter __last,
-                       const _Tp& __val)
+inline _InputIter find(_InputIter __first, _InputIter __last, const _Tp& __val)
 {
   __STL_REQUIRES(_InputIter, _InputIterator);
-  __STL_REQUIRES_BINARY_OP(_OP_EQUAL, bool, 
-            typename iterator_traits<_InputIter>::value_type, _Tp);
+  __STL_REQUIRES_BINARY_OP(_OP_EQUAL, bool, typename iterator_traits<_InputIter>::value_type, _Tp);
   return find(__first, __last, __val, __ITERATOR_CATEGORY(__first));
 }
 
@@ -211,16 +217,18 @@ inline _InputIter find_if(_InputIter __first, _InputIter __last,
 }
 
 // adjacent_find.
-
+// 找出第一组满足条件的相邻元素。这里所谓的条件，在版本一中指“两元素相等”。
 template <class _ForwardIter>
-_ForwardIter adjacent_find(_ForwardIter __first, _ForwardIter __last) {
+_ForwardIter adjacent_find(_ForwardIter __first, _ForwardIter __last) 
+{
   __STL_REQUIRES(_ForwardIter, _ForwardIterator);
-  __STL_REQUIRES(typename iterator_traits<_ForwardIter>::value_type,
-                 _EqualityComparable);
+  __STL_REQUIRES(typename iterator_traits<_ForwardIter>::value_type, _EqualityComparable);
   if (__first == __last)
     return __last;
   _ForwardIter __next = __first;
-  while(++__next != __last) {
+  while(++__next != __last) 
+  {
+    // 找到相邻的元素值相同，就结束
     if (*__first == *__next)
       return __first;
     __first = __next;
@@ -228,17 +236,17 @@ _ForwardIter adjacent_find(_ForwardIter __first, _ForwardIter __last) {
   return __last;
 }
 
+// 在版本二中允许用户指定一个二元运算。
 template <class _ForwardIter, class _BinaryPredicate>
-_ForwardIter adjacent_find(_ForwardIter __first, _ForwardIter __last,
-                           _BinaryPredicate __binary_pred) {
+_ForwardIter adjacent_find(_ForwardIter __first, _ForwardIter __last, _BinaryPredicate __binary_pred) 
+{
   __STL_REQUIRES(_ForwardIter, _ForwardIterator);
-  __STL_BINARY_FUNCTION_CHECK(_BinaryPredicate, bool,
-          typename iterator_traits<_ForwardIter>::value_type,
-          typename iterator_traits<_ForwardIter>::value_type);
+  __STL_BINARY_FUNCTION_CHECK(_BinaryPredicate, bool, typename iterator_traits<_ForwardIter>::value_type, typename iterator_traits<_ForwardIter>::value_type);
   if (__first == __last)
     return __last;
   _ForwardIter __next = __first;
-  while(++__next != __last) {
+  while(++__next != __last) 
+  {
     if (__binary_pred(*__first, *__next))
       return __first;
     __first = __next;
@@ -252,38 +260,40 @@ _ForwardIter adjacent_find(_ForwardIter __first, _ForwardIter __last,
 // C++ standard only has the latter version, but the former, which was present
 // in the HP STL, is retained for backward compatibility.
 
+// 运用equality操作符，将[first, last)区间内的每一个元素拿来和指定值value比较，并返回与value相等的元素个数。
+// 旧版，需提供计数器
 template <class _InputIter, class _Tp, class _Size>
-void count(_InputIter __first, _InputIter __last, const _Tp& __value,
-           _Size& __n) {
+void count(_InputIter __first, _InputIter __last, const _Tp& __value, _Size& __n) 
+{
   __STL_REQUIRES(_InputIter, _InputIterator);
-  __STL_REQUIRES(typename iterator_traits<_InputIter>::value_type,
-                 _EqualityComparable);
+  __STL_REQUIRES(typename iterator_traits<_InputIter>::value_type, _EqualityComparable);
   __STL_REQUIRES(_Tp, _EqualityComparable);
   for ( ; __first != __last; ++__first)
     if (*__first == __value)
       ++__n;
 }
 
+// 将指定操作（一个仿函数）pred实施与[first, last)区间内的每一个元素身上，并将“造成pred之计算结果为true”的所有元素的个数返回。
 template <class _InputIter, class _Predicate, class _Size>
-void count_if(_InputIter __first, _InputIter __last, _Predicate __pred,
-              _Size& __n) {
+void count_if(_InputIter __first, _InputIter __last, _Predicate __pred, _Size& __n) 
+{
   __STL_REQUIRES(_InputIter, _InputIterator);
-  __STL_UNARY_FUNCTION_CHECK(_Predicate, bool, 
-                  typename iterator_traits<_InputIter>::value_type);
+  __STL_UNARY_FUNCTION_CHECK(_Predicate, bool, typename iterator_traits<_InputIter>::value_type);
   for ( ; __first != __last; ++__first)
     if (__pred(*__first))
       ++__n;
 }
 
 #ifdef __STL_CLASS_PARTIAL_SPECIALIZATION
-
+// 新版
 template <class _InputIter, class _Tp>
 typename iterator_traits<_InputIter>::difference_type
-count(_InputIter __first, _InputIter __last, const _Tp& __value) {
+count(_InputIter __first, _InputIter __last, const _Tp& __value) 
+{
   __STL_REQUIRES(_InputIter, _InputIterator);
-  __STL_REQUIRES(typename iterator_traits<_InputIter>::value_type,
-                 _EqualityComparable);
+  __STL_REQUIRES(typename iterator_traits<_InputIter>::value_type, _EqualityComparable);
   __STL_REQUIRES(_Tp, _EqualityComparable);
+  // 声明一个计数器
   typename iterator_traits<_InputIter>::difference_type __n = 0;
   for ( ; __first != __last; ++__first)
     if (*__first == __value)
@@ -293,10 +303,10 @@ count(_InputIter __first, _InputIter __last, const _Tp& __value) {
 
 template <class _InputIter, class _Predicate>
 typename iterator_traits<_InputIter>::difference_type
-count_if(_InputIter __first, _InputIter __last, _Predicate __pred) {
+count_if(_InputIter __first, _InputIter __last, _Predicate __pred) 
+{
   __STL_REQUIRES(_InputIter, _InputIterator);
-  __STL_UNARY_FUNCTION_CHECK(_Predicate, bool, 
-                  typename iterator_traits<_InputIter>::value_type);
+  __STL_UNARY_FUNCTION_CHECK(_Predicate, bool, typename iterator_traits<_InputIter>::value_type);
   typename iterator_traits<_InputIter>::difference_type __n = 0;
   for ( ; __first != __last; ++__first)
     if (__pred(*__first))
@@ -309,21 +319,20 @@ count_if(_InputIter __first, _InputIter __last, _Predicate __pred) {
 
 // search.
 
+// 在序列一中查找序列二，如果完全比对成功，返回序列一中第一次找到序列二的首位置
 template <class _ForwardIter1, class _ForwardIter2>
-_ForwardIter1 search(_ForwardIter1 __first1, _ForwardIter1 __last1,
-                     _ForwardIter2 __first2, _ForwardIter2 __last2) 
+_ForwardIter1 search(_ForwardIter1 __first1, _ForwardIter1 __last1, _ForwardIter2 __first2, _ForwardIter2 __last2) 
 {
   __STL_REQUIRES(_ForwardIter1, _ForwardIterator);
   __STL_REQUIRES(_ForwardIter2, _ForwardIterator);
-  __STL_REQUIRES_BINARY_OP(_OP_EQUAL, bool,
-   typename iterator_traits<_ForwardIter1>::value_type,
-   typename iterator_traits<_ForwardIter2>::value_type);
+  __STL_REQUIRES_BINARY_OP(_OP_EQUAL, bool, typename iterator_traits<_ForwardIter1>::value_type, typename iterator_traits<_ForwardIter2>::value_type);
 
   // Test for empty ranges
   if (__first1 == __last1 || __first2 == __last2)
     return __first1;
 
   // Test for a pattern of length 1.
+  // 序列二仅含一个元素
   _ForwardIter2 __tmp(__first2);
   ++__tmp;
   if (__tmp == __last2)
@@ -333,23 +342,30 @@ _ForwardIter1 search(_ForwardIter1 __first1, _ForwardIter1 __last1,
 
   _ForwardIter2 __p1, __p;
 
-  __p1 = __first2; ++__p1;
+  __p1 = __first2; 
+  ++__p1;
 
   _ForwardIter1 __current = __first1;
 
-  while (__first1 != __last1) {
+  while (__first1 != __last1) 
+  {
+    // 从序列一中比对序列二的首元素
     __first1 = find(__first1, __last1, *__first2);
     if (__first1 == __last1)
       return __last1;
 
     __p = __p1;
     __current = __first1; 
+    // 比对成功后选定第二个元素
     if (++__current == __last1)
       return __last1;
-
-    while (*__current == *__p) {
+    // 从第二个元素开始对比，current是序列一的，p是序列二的
+    while (*__current == *__p) 
+    {
+      // 完全找到序列二
       if (++__p == __last2)
         return __first1;
+      // 序列一不够长
       if (++__current == __last1)
         return __last1;
     }
@@ -420,23 +436,27 @@ _ForwardIter1 search(_ForwardIter1 __first1, _ForwardIter1 __last1,
 
 // search_n.  Search for __count consecutive copies of __val.
 
+// 在序列[first, last)所涵盖的区间中，查找“包含连续count个符合条件的元素”形成的子序列，返回一个迭代器指向该子序列起始处。
 template <class _ForwardIter, class _Integer, class _Tp>
-_ForwardIter search_n(_ForwardIter __first, _ForwardIter __last,
-                      _Integer __count, const _Tp& __val) {
+_ForwardIter search_n(_ForwardIter __first, _ForwardIter __last, _Integer __count, const _Tp& __val) 
+{
   __STL_REQUIRES(_ForwardIter, _ForwardIterator);
-  __STL_REQUIRES(typename iterator_traits<_ForwardIter>::value_type,
-                 _EqualityComparable);
+  __STL_REQUIRES(typename iterator_traits<_ForwardIter>::value_type, _EqualityComparable);
   __STL_REQUIRES(_Tp, _EqualityComparable);
 
   if (__count <= 0)
     return __first;
-  else {
+  else 
+  {
     __first = find(__first, __last, __val);
-    while (__first != __last) {
+    while (__first != __last) 
+    {
+      // 每次循环计数器会重置
       _Integer __n = __count - 1;
       _ForwardIter __i = __first;
       ++__i;
-      while (__i != __last && __n != 0 && *__i == __val) {
+      while (__i != __last && __n != 0 && *__i == __val) 
+      {
         ++__i;
         --__n;
       }
@@ -449,33 +469,37 @@ _ForwardIter search_n(_ForwardIter __first, _ForwardIter __last,
   }
 }
 
+// 查找“连续count个元素皆满足指定条件”所形成的那个子序列的起点，返回其发生位置。
 template <class _ForwardIter, class _Integer, class _Tp, class _BinaryPred>
-_ForwardIter search_n(_ForwardIter __first, _ForwardIter __last,
-                      _Integer __count, const _Tp& __val,
-                      _BinaryPred __binary_pred) {
+_ForwardIter search_n(_ForwardIter __first, _ForwardIter __last, _Integer __count, const _Tp& __val, _BinaryPred __binary_pred) 
+{
   __STL_REQUIRES(_ForwardIter, _ForwardIterator);
-  __STL_BINARY_FUNCTION_CHECK(_BinaryPred, bool, 
-             typename iterator_traits<_ForwardIter>::value_type, _Tp);
+  __STL_BINARY_FUNCTION_CHECK(_BinaryPred, bool, typename iterator_traits<_ForwardIter>::value_type, _Tp);
   if (__count <= 0)
     return __first;
-  else {
-    while (__first != __last) {
+  else 
+  {
+    while (__first != __last) 
+    {
       if (__binary_pred(*__first, __val))
         break;
       ++__first;
     }
-    while (__first != __last) {
+    while (__first != __last) 
+    {
       _Integer __n = __count - 1;
       _ForwardIter __i = __first;
       ++__i;
-      while (__i != __last && __n != 0 && __binary_pred(*__i, __val)) {
+      while (__i != __last && __n != 0 && __binary_pred(*__i, __val)) 
+      {
         ++__i;
         --__n;
       }
       if (__n == 0)
         return __first;
       else {
-        while (__i != __last) {
+        while (__i != __last) 
+        {
           if (__binary_pred(*__i, __val))
             break;
           ++__i;
@@ -489,15 +513,17 @@ _ForwardIter search_n(_ForwardIter __first, _ForwardIter __last,
 
 // swap_ranges
 
+// 将[first1, last1)区间内的元素与“从first2开始、个数相同”的元素互相交换。
+// 这两个序列可位于同一容器，也可位于不同的容器。
+// 如果第二序列的长度小于第一序列，或是两序列在同一容器中且彼此重叠，执行结果未可预期。
+// 次算法返回一个迭代器，指向第二序列中的最后一个被交换元素的下一个位置。
 template <class _ForwardIter1, class _ForwardIter2>
-_ForwardIter2 swap_ranges(_ForwardIter1 __first1, _ForwardIter1 __last1,
-                          _ForwardIter2 __first2) {
+_ForwardIter2 swap_ranges(_ForwardIter1 __first1, _ForwardIter1 __last1, _ForwardIter2 __first2) 
+{
   __STL_REQUIRES(_ForwardIter1, _Mutable_ForwardIterator);
   __STL_REQUIRES(_ForwardIter2, _Mutable_ForwardIterator);
-  __STL_CONVERTIBLE(typename iterator_traits<_ForwardIter1>::value_type,
-                    typename iterator_traits<_ForwardIter2>::value_type);
-  __STL_CONVERTIBLE(typename iterator_traits<_ForwardIter2>::value_type,
-                    typename iterator_traits<_ForwardIter1>::value_type);
+  __STL_CONVERTIBLE(typename iterator_traits<_ForwardIter1>::value_type, typename iterator_traits<_ForwardIter2>::value_type);
+  __STL_CONVERTIBLE(typename iterator_traits<_ForwardIter2>::value_type, typename iterator_traits<_ForwardIter1>::value_type);
   for ( ; __first1 != __last1; ++__first1, ++__first2)
     iter_swap(__first1, __first2);
   return __first2;
@@ -505,9 +531,10 @@ _ForwardIter2 swap_ranges(_ForwardIter1 __first1, _ForwardIter1 __last1,
 
 // transform
 
+// 版本一以仿函数opr作用域[first, last)中的每一个元素身上，并以其结果产生出一个新序列。
 template <class _InputIter, class _OutputIter, class _UnaryOperation>
-_OutputIter transform(_InputIter __first, _InputIter __last,
-                      _OutputIter __result, _UnaryOperation __opr) {
+_OutputIter transform(_InputIter __first, _InputIter __last, _OutputIter __result, _UnaryOperation __opr) 
+{
   __STL_REQUIRES(_InputIter, _InputIterator);
   __STL_REQUIRES(_OutputIter, _OutputIterator);
 
@@ -516,11 +543,10 @@ _OutputIter transform(_InputIter __first, _InputIter __last,
   return __result;
 }
 
-template <class _InputIter1, class _InputIter2, class _OutputIter,
-          class _BinaryOperation>
-_OutputIter transform(_InputIter1 __first1, _InputIter1 __last1,
-                      _InputIter2 __first2, _OutputIter __result,
-                      _BinaryOperation __binary_op) {
+// 版本二以仿函数__binary_op作用于一双元素身上（其中一个元素来自[first1, last)，另一个元素来自“从first2开始的序列”），并以其结果产生一个新序列。
+template <class _InputIter1, class _InputIter2, class _OutputIter, class _BinaryOperation>
+_OutputIter transform(_InputIter1 __first1, _InputIter1 __last1, _InputIter2 __first2, _OutputIter __result, _BinaryOperation __binary_op) 
+{
   __STL_REQUIRES(_InputIter1, _InputIterator);
   __STL_REQUIRES(_InputIter2, _InputIterator);
   __STL_REQUIRES(_OutputIter, _OutputIterator);
@@ -531,12 +557,12 @@ _OutputIter transform(_InputIter1 __first1, _InputIter1 __last1,
 
 // replace, replace_if, replace_copy, replace_copy_if
 
+// 将[first, last)区间内的所有old_value都以new_value取代
 template <class _ForwardIter, class _Tp>
-void replace(_ForwardIter __first, _ForwardIter __last,
-             const _Tp& __old_value, const _Tp& __new_value) {
+void replace(_ForwardIter __first, _ForwardIter __last, const _Tp& __old_value, const _Tp& __new_value) 
+{
   __STL_REQUIRES(_ForwardIter, _Mutable_ForwardIterator);
-  __STL_REQUIRES_BINARY_OP(_OP_EQUAL, bool,
-         typename iterator_traits<_ForwardIter>::value_type, _Tp);
+  __STL_REQUIRES_BINARY_OP(_OP_EQUAL, bool, typename iterator_traits<_ForwardIter>::value_type, _Tp);
   __STL_CONVERTIBLE(_Tp, typename iterator_traits<_ForwardIter>::value_type);
   for ( ; __first != __last; ++__first)
     if (*__first == __old_value)
@@ -544,38 +570,35 @@ void replace(_ForwardIter __first, _ForwardIter __last,
 }
 
 template <class _ForwardIter, class _Predicate, class _Tp>
-void replace_if(_ForwardIter __first, _ForwardIter __last,
-                _Predicate __pred, const _Tp& __new_value) {
+void replace_if(_ForwardIter __first, _ForwardIter __last, _Predicate __pred, const _Tp& __new_value) 
+{
   __STL_REQUIRES(_ForwardIter, _Mutable_ForwardIterator);
   __STL_CONVERTIBLE(_Tp, typename iterator_traits<_ForwardIter>::value_type);
-  __STL_UNARY_FUNCTION_CHECK(_Predicate, bool,
-             typename iterator_traits<_ForwardIter>::value_type);
+  __STL_UNARY_FUNCTION_CHECK(_Predicate, bool, typename iterator_traits<_ForwardIter>::value_type);
   for ( ; __first != __last; ++__first)
     if (__pred(*__first))
       *__first = __new_value;
 }
 
+// 行为与replace()相似，唯一不同的是新序列会被复制到result所指的容器中。原序列没有任何改变。
 template <class _InputIter, class _OutputIter, class _Tp>
-_OutputIter replace_copy(_InputIter __first, _InputIter __last,
-                         _OutputIter __result,
-                         const _Tp& __old_value, const _Tp& __new_value) {
+_OutputIter replace_copy(_InputIter __first, _InputIter __last, _OutputIter __result, const _Tp& __old_value, const _Tp& __new_value) 
+{
   __STL_REQUIRES(_InputIter, _InputIterator);
   __STL_REQUIRES(_OutputIter, _OutputIterator);
-  __STL_REQUIRES_BINARY_OP(_OP_EQUAL, bool,
-         typename iterator_traits<_InputIter>::value_type, _Tp);
+  __STL_REQUIRES_BINARY_OP(_OP_EQUAL, bool, typename iterator_traits<_InputIter>::value_type, _Tp);
   for ( ; __first != __last; ++__first, ++__result)
     *__result = *__first == __old_value ? __new_value : *__first;
   return __result;
 }
 
+// 指定pred替代equality操作符
 template <class _InputIter, class _OutputIter, class _Predicate, class _Tp>
-_OutputIter replace_copy_if(_InputIter __first, _InputIter __last,
-                            _OutputIter __result,
-                            _Predicate __pred, const _Tp& __new_value) {
+_OutputIter replace_copy_if(_InputIter __first, _InputIter __last, _OutputIter __result, _Predicate __pred, const _Tp& __new_value) 
+{
   __STL_REQUIRES(_InputIter, _InputIterator);
   __STL_REQUIRES(_OutputIter, _OutputIterator);
-  __STL_UNARY_FUNCTION_CHECK(_Predicate, bool,
-                typename iterator_traits<_InputIter>::value_type);
+  __STL_UNARY_FUNCTION_CHECK(_Predicate, bool, typename iterator_traits<_InputIter>::value_type);
   for ( ; __first != __last; ++__first, ++__result)
     *__result = __pred(*__first) ? __new_value : *__first;
   return __result;
@@ -583,11 +606,13 @@ _OutputIter replace_copy_if(_InputIter __first, _InputIter __last,
 
 // generate and generate_n
 
+// 将仿函数gen的运算结果填写在[first, last)区间的所有元素身上。
+// 填写用的是迭代器所指元素的assignment操作符（=）
 template <class _ForwardIter, class _Generator>
-void generate(_ForwardIter __first, _ForwardIter __last, _Generator __gen) {
+void generate(_ForwardIter __first, _ForwardIter __last, _Generator __gen) 
+{
   __STL_REQUIRES(_ForwardIter, _ForwardIterator);
-  __STL_GENERATOR_CHECK(_Generator, 
-          typename iterator_traits<_ForwardIter>::value_type);
+  __STL_GENERATOR_CHECK(_Generator, typename iterator_traits<_ForwardIter>::value_type);
   for ( ; __first != __last; ++__first)
     *__first = __gen();
 }
@@ -602,86 +627,96 @@ _OutputIter generate_n(_OutputIter __first, _Size __n, _Generator __gen) {
 
 // remove, remove_if, remove_copy, remove_copy_if
 
+// 将结果复制到一个以result标志起始位置的容器身上。新容器可以和原容器重叠。
 template <class _InputIter, class _OutputIter, class _Tp>
-_OutputIter remove_copy(_InputIter __first, _InputIter __last,
-                        _OutputIter __result, const _Tp& __value) {
+_OutputIter remove_copy(_InputIter __first, _InputIter __last, _OutputIter __result, const _Tp& __value) 
+{
   __STL_REQUIRES(_InputIter, _InputIterator);
   __STL_REQUIRES(_OutputIter, _OutputIterator);
-  __STL_REQUIRES_BINARY_OP(_OP_EQUAL, bool,
-       typename iterator_traits<_InputIter>::value_type, _Tp);
+  __STL_REQUIRES_BINARY_OP(_OP_EQUAL, bool, typename iterator_traits<_InputIter>::value_type, _Tp);
   for ( ; __first != __last; ++__first)
-    if (!(*__first == __value)) {
+    if (!(*__first == __value)) 
+    {
       *__result = *__first;
       ++__result;
     }
   return __result;
 }
 
+// 用一元操作符pred替代equality操作符
 template <class _InputIter, class _OutputIter, class _Predicate>
-_OutputIter remove_copy_if(_InputIter __first, _InputIter __last,
-                           _OutputIter __result, _Predicate __pred) {
+_OutputIter remove_copy_if(_InputIter __first, _InputIter __last, _OutputIter __result, _Predicate __pred) 
+{
   __STL_REQUIRES(_InputIter, _InputIterator);
   __STL_REQUIRES(_OutputIter, _OutputIterator);
-  __STL_UNARY_FUNCTION_CHECK(_Predicate, bool,
-             typename iterator_traits<_InputIter>::value_type);
+  __STL_UNARY_FUNCTION_CHECK(_Predicate, bool, typename iterator_traits<_InputIter>::value_type);
   for ( ; __first != __last; ++__first)
-    if (!__pred(*__first)) {
+    if (!__pred(*__first)) 
+    {
       *__result = *__first;
       ++__result;
     }
   return __result;
 }
 
+/*
+// 这一算法并不真正从容器中删除那些元素（换句话说容器大小并未改变），
+// 而是将每一个不与value相等（也就是我们并不打算移除）的元素轮番赋值给first之后的空间。
+// 返回值ForwardIterator标示出重新整理后的最后元素的下一个位置。
+// 如果要删除那些残余数据，可将返回的迭代器交给区间所在的容器的erase() member function。
+*/
 template <class _ForwardIter, class _Tp>
-_ForwardIter remove(_ForwardIter __first, _ForwardIter __last,
-                    const _Tp& __value) {
+_ForwardIter remove(_ForwardIter __first, _ForwardIter __last, const _Tp& __value) 
+{
   __STL_REQUIRES(_ForwardIter, _Mutable_ForwardIterator);
-  __STL_REQUIRES_BINARY_OP(_OP_EQUAL, bool,
-       typename iterator_traits<_ForwardIter>::value_type, _Tp);
+  __STL_REQUIRES_BINARY_OP(_OP_EQUAL, bool, typename iterator_traits<_ForwardIter>::value_type, _Tp);
   __STL_CONVERTIBLE(_Tp, typename iterator_traits<_ForwardIter>::value_type);
+  // 利用循环查找法找出第一个相等的元素。
   __first = find(__first, __last, __value);
   _ForwardIter __i = __first;
-  return __first == __last ? __first 
-                           : remove_copy(++__i, __last, __first, __value);
+  // 利用“remove_copy()允许新旧容器重叠”的性质，进行移除操作。
+  return __first == __last ? __first : remove_copy(++__i, __last, __first, __value);
 }
 
 template <class _ForwardIter, class _Predicate>
-_ForwardIter remove_if(_ForwardIter __first, _ForwardIter __last,
-                       _Predicate __pred) {
+_ForwardIter remove_if(_ForwardIter __first, _ForwardIter __last, _Predicate __pred) 
+{
   __STL_REQUIRES(_ForwardIter, _Mutable_ForwardIterator);
-  __STL_UNARY_FUNCTION_CHECK(_Predicate, bool,
-               typename iterator_traits<_ForwardIter>::value_type);
+  __STL_UNARY_FUNCTION_CHECK(_Predicate, bool, typename iterator_traits<_ForwardIter>::value_type);
   __first = find_if(__first, __last, __pred);
   _ForwardIter __i = __first;
-  return __first == __last ? __first 
-                           : remove_copy_if(++__i, __last, __first, __pred);
+  return __first == __last ? __first : remove_copy_if(++__i, __last, __first, __pred);
 }
 
 // unique and unique_copy
 
+// 由于output iterator为write only，无法像forward iterator那般可以读取，所以不能有类似*result != *first这样的判断操作，所以需要设计此版本。
 template <class _InputIter, class _OutputIter, class _Tp>
-_OutputIter __unique_copy(_InputIter __first, _InputIter __last,
-                          _OutputIter __result, _Tp*) {
+_OutputIter __unique_copy(_InputIter __first, _InputIter __last, _OutputIter __result, _Tp*) 
+{
   _Tp __value = *__first;
   *__result = __value;
   while (++__first != __last)
-    if (!(__value == *__first)) {
+    if (!(__value == *__first)) 
+    {
       __value = *__first;
       *++__result = __value;
     }
   return ++__result;
 }
 
+// 版本一辅助函数，output_iterator_tag版
 template <class _InputIter, class _OutputIter>
-inline _OutputIter __unique_copy(_InputIter __first, _InputIter __last,
-                                 _OutputIter __result, 
-                                 output_iterator_tag) {
+inline _OutputIter __unique_copy(_InputIter __first, _InputIter __last, _OutputIter __result,  output_iterator_tag) 
+{
+  // 以下，output iterator有一些功能限制，所以必须先知道其value type。
   return __unique_copy(__first, __last, __result, __VALUE_TYPE(__first));
 }
 
+// 版本一辅助函数，forward_iterator_tag版
 template <class _InputIter, class _ForwardIter>
-_ForwardIter __unique_copy(_InputIter __first, _InputIter __last,
-                           _ForwardIter __result, forward_iterator_tag) {
+_ForwardIter __unique_copy(_InputIter __first, _InputIter __last, _ForwardIter __result, forward_iterator_tag) 
+{
   *__result = *__first;
   while (++__first != __last)
     if (!(*__result == *__first))
@@ -689,16 +724,19 @@ _ForwardIter __unique_copy(_InputIter __first, _InputIter __last,
   return ++__result;
 }
 
+// 算法unique_copy可以从[first, last)中将元素复制到以result开头的区间上；
+// 如果面对相邻重复元素群，指挥赋值其中第一个元素。
+// 返回的迭代器指向以result开头的区间的尾端。
+// 版本一使用简单的equality操作符测试。
 template <class _InputIter, class _OutputIter>
-inline _OutputIter unique_copy(_InputIter __first, _InputIter __last,
-                               _OutputIter __result) {
+inline _OutputIter unique_copy(_InputIter __first, _InputIter __last, _OutputIter __result) 
+{
   __STL_REQUIRES(_InputIter, _InputIterator);
   __STL_REQUIRES(_OutputIter, _OutputIterator);
-  __STL_REQUIRES(typename iterator_traits<_InputIter>::value_type,
-                 _EqualityComparable);
-  if (__first == __last) return __result;
-  return __unique_copy(__first, __last, __result,
-                       __ITERATOR_CATEGORY(__result));
+  __STL_REQUIRES(typename iterator_traits<_InputIter>::value_type, _EqualityComparable);
+  if (__first == __last) 
+    return __result;
+  return __unique_copy(__first, __last, __result, __ITERATOR_CATEGORY(__result));
 }
 
 template <class _InputIter, class _OutputIter, class _BinaryPredicate,
@@ -740,22 +778,22 @@ _ForwardIter __unique_copy(_InputIter __first, _InputIter __last,
   return ++__result;
 }
 
+// 版本二使用一个Binary Predicate作为测试准则。
 template <class _InputIter, class _OutputIter, class _BinaryPredicate>
-inline _OutputIter unique_copy(_InputIter __first, _InputIter __last,
-                               _OutputIter __result,
-                               _BinaryPredicate __binary_pred) {
+inline _OutputIter unique_copy(_InputIter __first, _InputIter __last, _OutputIter __result, _BinaryPredicate __binary_pred) 
+{
   __STL_REQUIRES(_InputIter, _InputIterator);
   __STL_REQUIRES(_OutputIter, _OutputIterator);
-  if (__first == __last) return __result;
-  return __unique_copy(__first, __last, __result, __binary_pred,
-                       __ITERATOR_CATEGORY(__result));
+  if (__first == __last) 
+    return __result;
+  return __unique_copy(__first, __last, __result, __binary_pred, __ITERATOR_CATEGORY(__result));
 }
 
 template <class _ForwardIter>
-_ForwardIter unique(_ForwardIter __first, _ForwardIter __last) {
+_ForwardIter unique(_ForwardIter __first, _ForwardIter __last) 
+{
   __STL_REQUIRES(_ForwardIter, _Mutable_ForwardIterator);
-  __STL_REQUIRES(typename iterator_traits<_ForwardIter>::value_type,
-                 _EqualityComparable);
+  __STL_REQUIRES(typename iterator_traits<_ForwardIter>::value_type, _EqualityComparable);
   __first = adjacent_find(__first, __last);
   return unique_copy(__first, __last, __first);
 }
@@ -773,9 +811,10 @@ _ForwardIter unique(_ForwardIter __first, _ForwardIter __last,
 
 // reverse and reverse_copy, and their auxiliary functions
 
+// bidirectional iterator版
 template <class _BidirectionalIter>
-void __reverse(_BidirectionalIter __first, _BidirectionalIter __last, 
-               bidirectional_iterator_tag) {
+void __reverse(_BidirectionalIter __first, _BidirectionalIter __last,  bidirectional_iterator_tag) 
+{
   while (true)
     if (__first == __last || __first == --__last)
       return;
@@ -783,26 +822,32 @@ void __reverse(_BidirectionalIter __first, _BidirectionalIter __last,
       iter_swap(__first++, __last);
 }
 
+// random access iterator版
 template <class _RandomAccessIter>
-void __reverse(_RandomAccessIter __first, _RandomAccessIter __last,
-               random_access_iterator_tag) {
+void __reverse(_RandomAccessIter __first, _RandomAccessIter __last, random_access_iterator_tag) 
+{
+  // 只有random access iterators才能做一下的first < last判断
   while (__first < __last)
     iter_swap(__first++, --__last);
 }
 
+// 将序列[first, last)的元素在原容器中颠倒重排。迭代器的双向或随机定位能力，影响了这个算法的效率，所以设计为双层架构
 template <class _BidirectionalIter>
-inline void reverse(_BidirectionalIter __first, _BidirectionalIter __last) {
+inline void reverse(_BidirectionalIter __first, _BidirectionalIter __last) 
+{
   __STL_REQUIRES(_BidirectionalIter, _Mutable_BidirectionalIterator);
   __reverse(__first, __last, __ITERATOR_CATEGORY(__first));
 }
 
+// 行为类似reverse()，但产生出来的新序列会被置于以result指出的容器中。
+// 返回值OutputIterator指向新产生的最后元素的下一个位置。原序列没有任何改变。
 template <class _BidirectionalIter, class _OutputIter>
-_OutputIter reverse_copy(_BidirectionalIter __first,
-                         _BidirectionalIter __last,
-                         _OutputIter __result) {
+_OutputIter reverse_copy(_BidirectionalIter __first, _BidirectionalIter __last, _OutputIter __result) 
+{
   __STL_REQUIRES(_BidirectionalIter, _BidirectionalIterator);
   __STL_REQUIRES(_OutputIter, _OutputIterator);
-  while (__first != __last) {
+  while (__first != __last) 
+  {
     --__last;
     *__result = *__last;
     ++__result;
@@ -812,11 +857,12 @@ _OutputIter reverse_copy(_BidirectionalIter __first,
 
 // rotate and rotate_copy, and their auxiliary functions
 
+// 最大公因数，辗转相除法，用除数除以余数直到余数为0
 template <class _EuclideanRingElement>
-_EuclideanRingElement __gcd(_EuclideanRingElement __m,
-                            _EuclideanRingElement __n)
+_EuclideanRingElement __gcd(_EuclideanRingElement __m, _EuclideanRingElement __n)
 {
-  while (__n != 0) {
+  while (__n != 0) 
+  {
     _EuclideanRingElement __t = __m % __n;
     __m = __n;
     __n = __t;
@@ -824,29 +870,33 @@ _EuclideanRingElement __gcd(_EuclideanRingElement __m,
   return __m;
 }
 
+// forward iterator版
 template <class _ForwardIter, class _Distance>
-_ForwardIter __rotate(_ForwardIter __first,
-                      _ForwardIter __middle,
-                      _ForwardIter __last,
-                      _Distance*,
-                      forward_iterator_tag) {
+_ForwardIter __rotate(_ForwardIter __first, _ForwardIter __middle, _ForwardIter __last, _Distance*, forward_iterator_tag) 
+{
   if (__first == __middle)
     return __last;
   if (__last  == __middle)
     return __first;
 
   _ForwardIter __first2 = __middle;
+  // 此过程结束，从middle开始到last的部分以被从后段移到前段，且顺序保持不变
+  // 但从first到middle - 1的部分虽然被移动到后段，但顺序可能不对
+  // first指针用作遍历贯穿全程没有做修改，first2和middle做修改
   do {
     swap(*__first++, *__first2++);
     if (__first == __middle)
       __middle = __first2;
   } while (__first2 != __last);
 
+  // 函数返回指针指向反转后原后半段尾端的位置
   _ForwardIter __new_middle = __first;
 
   __first2 = __middle;
 
-  while (__first2 != __last) {
+  // 重排移动到后段的原前段顺序
+  while (__first2 != __last) 
+  {
     swap (*__first++, *__first2++);
     if (__first == __middle)
       __middle = __first2;
@@ -857,40 +907,39 @@ _ForwardIter __rotate(_ForwardIter __first,
   return __new_middle;
 }
 
-
+// bidirectional iterator版
 template <class _BidirectionalIter, class _Distance>
-_BidirectionalIter __rotate(_BidirectionalIter __first,
-                            _BidirectionalIter __middle,
-                            _BidirectionalIter __last,
-                            _Distance*,
-                            bidirectional_iterator_tag) {
+_BidirectionalIter __rotate(_BidirectionalIter __first, _BidirectionalIter __middle, _BidirectionalIter __last, _Distance*, bidirectional_iterator_tag) 
+{
   __STL_REQUIRES(_BidirectionalIter, _Mutable_BidirectionalIterator);
   if (__first == __middle)
     return __last;
   if (__last  == __middle)
     return __first;
-
+  // 分别反转前后段内容
   __reverse(__first,  __middle, bidirectional_iterator_tag());
   __reverse(__middle, __last,   bidirectional_iterator_tag());
 
+  // 头尾交换直到前段或后段耗尽
   while (__first != __middle && __middle != __last)
     swap (*__first++, *--__last);
 
-  if (__first == __middle) {
+  // 把剩余部分顺序反转回来
+  if (__first == __middle) 
+  {
     __reverse(__middle, __last,   bidirectional_iterator_tag());
     return __last;
   }
-  else {
+  else 
+  {
     __reverse(__first,  __middle, bidirectional_iterator_tag());
     return __first;
   }
 }
 
 template <class _RandomAccessIter, class _Distance, class _Tp>
-_RandomAccessIter __rotate(_RandomAccessIter __first,
-                           _RandomAccessIter __middle,
-                           _RandomAccessIter __last,
-                           _Distance *, _Tp *) {
+_RandomAccessIter __rotate(_RandomAccessIter __first, _RandomAccessIter __middle, _RandomAccessIter __last, _Distance *, _Tp *) 
+{
   __STL_REQUIRES(_RandomAccessIter, _Mutable_RandomAccessIterator);
   _Distance __n = __last   - __first;
   _Distance __k = __middle - __first;
@@ -899,37 +948,49 @@ _RandomAccessIter __rotate(_RandomAccessIter __first,
 
   if (__k == 0)
     return __last;
-
-  else if (__k == __l) {
+  else if (__k == __l) 
+  {
     swap_ranges(__first, __middle, __middle);
     return __result;
   }
 
   _Distance __d = __gcd(__n, __k);
 
-  for (_Distance __i = 0; __i < __d; __i++) {
+  for (_Distance __i = 0; __i < __d; __i++) 
+  {
     _Tp __tmp = *__first;
     _RandomAccessIter __p = __first;
 
-    if (__k < __l) {
-      for (_Distance __j = 0; __j < __l/__d; __j++) {
-        if (__p > __first + __l) {
+    // 前段小于后段
+    if (__k < __l) 
+    {
+      // 循环移位
+      for (_Distance __j = 0; __j < __l / __d; __j++) 
+      {
+        // 将前段对应位前进后段的长度
+        if (__p > __first + __l) 
+        {
           *__p = *(__p - __l);
           __p -= __l;
         }
-
+        // 将后段对应位后退前段的长度
         *__p = *(__p + __k);
         __p += __k;
       }
     }
-
-    else {
-      for (_Distance __j = 0; __j < __k/__d - 1; __j ++) {
-        if (__p < __last - __k) {
+    // 后段小于等于前段
+    else 
+    {
+      for (_Distance __j = 0; __j < __k / __d - 1; __j ++) 
+      {
+        // 后段相应位后退前段的长度
+        if (__p < __last - __k) 
+        {
           *__p = *(__p + __k);
           __p += __k;
         }
 
+        // 前段相应位前进后段长度
         *__p = * (__p - __l);
         __p -= __l;
       }
@@ -943,17 +1004,17 @@ _RandomAccessIter __rotate(_RandomAccessIter __first,
 }
 
 template <class _ForwardIter>
-inline _ForwardIter rotate(_ForwardIter __first, _ForwardIter __middle,
-                           _ForwardIter __last) {
+inline _ForwardIter rotate(_ForwardIter __first, _ForwardIter __middle, _ForwardIter __last) 
+{
   __STL_REQUIRES(_ForwardIter, _Mutable_ForwardIterator);
-  return __rotate(__first, __middle, __last,
-                  __DISTANCE_TYPE(__first),
-                  __ITERATOR_CATEGORY(__first));
+  return __rotate(__first, __middle, __last, __DISTANCE_TYPE(__first), __ITERATOR_CATEGORY(__first));
 }
 
+// 行为类似rotate()，但产生出来的新序列会被置于result所指出的容器中。返回值OutputIterator指向新产生的最后元素的下一位置。原序列没有任何改变。
+// 由于不需要就地(in-place)在原容器中调整内容，所以只要把后段复制到新容器的前段，再把前段接续赋值到新容器即可。
 template <class _ForwardIter, class _OutputIter>
-_OutputIter rotate_copy(_ForwardIter __first, _ForwardIter __middle,
-                        _ForwardIter __last, _OutputIter __result) {
+_OutputIter rotate_copy(_ForwardIter __first, _ForwardIter __middle, _ForwardIter __last, _OutputIter __result) 
+{
   __STL_REQUIRES(_ForwardIter, _ForwardIterator);
   __STL_REQUIRES(_OutputIter, _OutputIterator);
   return copy(__first, __middle, copy(__middle, __last, __result));
@@ -1117,19 +1178,22 @@ random_sample(_InputIter __first, _InputIter __last,
 // partition, stable_partition, and their auxiliary functions
 
 template <class _ForwardIter, class _Predicate>
-_ForwardIter __partition(_ForwardIter __first,
-		         _ForwardIter __last,
-			 _Predicate   __pred,
-			 forward_iterator_tag) {
-  if (__first == __last) return __first;
+_ForwardIter __partition(_ForwardIter __first, _ForwardIter __last, _Predicate   __pred, forward_iterator_tag) 
+{
+  if (__first == __last) 
+    return __first;
 
+  // 碰到不符合pred条件的，跳出
   while (__pred(*__first))
-    if (++__first == __last) return __first;
+    if (++__first == __last) 
+      return __first;
 
   _ForwardIter __next = __first;
-
+  
   while (++__next != __last)
-    if (__pred(*__next)) {
+    // 碰到符合pred条件的，进行交换
+    if (__pred(*__next)) 
+    {
       swap(*__first, *__next);
       ++__first;
     }
@@ -1138,38 +1202,43 @@ _ForwardIter __partition(_ForwardIter __first,
 }
 
 template <class _BidirectionalIter, class _Predicate>
-_BidirectionalIter __partition(_BidirectionalIter __first,
-                               _BidirectionalIter __last,
-			       _Predicate __pred,
-			       bidirectional_iterator_tag) {
-  while (true) {
+_BidirectionalIter __partition(_BidirectionalIter __first, _BidirectionalIter __last, _Predicate __pred, bidirectional_iterator_tag) 
+{
+  while (true)
+  {
     while (true)
       if (__first == __last)
         return __first;
       else if (__pred(*__first))
         ++__first;
+      // 头，碰到不符合pred条件的，准备进行交换
       else
         break;
+
     --__last;
     while (true)
       if (__first == __last)
         return __first;
       else if (!__pred(*__last))
         --__last;
+      // 尾，碰到符合条件的，准备进行交换。
       else
         break;
     iter_swap(__first, __last);
+    // 头指针前进1，准备下一个外循环迭代。
     ++__first;
   }
 }
 
+// 快排的切分函数
+// partition会将区间[first, last)中的元素重新排列。
+// 所有被一元条件运算pred判定为true的元素，都会被放在区间的前端，被判定为false的元素，都会被放在区间的后端。
+// 这个算法并不保证保留元素的原始相对位置。如果需要保留原始相对位置，应使用stable_partition。
 template <class _ForwardIter, class _Predicate>
-inline _ForwardIter partition(_ForwardIter __first,
-   			      _ForwardIter __last,
-			      _Predicate   __pred) {
+inline _ForwardIter partition(_ForwardIter __first, _ForwardIter __last, _Predicate   __pred) 
+{
   __STL_REQUIRES(_ForwardIter, _Mutable_ForwardIterator);
-  __STL_UNARY_FUNCTION_CHECK(_Predicate, bool, 
-        typename iterator_traits<_ForwardIter>::value_type);
+  __STL_UNARY_FUNCTION_CHECK(_Predicate, bool, typename iterator_traits<_ForwardIter>::value_type);
   return __partition(__first, __last, __pred, __ITERATOR_CATEGORY(__first));
 }
 
@@ -2159,53 +2228,52 @@ bool binary_search(_ForwardIter __first, _ForwardIter __last,
 }
 
 // merge, with and without an explicitly supplied comparison function.
-
+// 将两个经过排序的集合S1和S2，合并起来置于另一段空间。所得结果也是一个有序(sorted)序列。
+// 返回一个迭代器，指向最后结果序列的最后一个元素的下一个位置。
+// 与set_union不同merge不会过滤掉多余的相同元素
 template <class _InputIter1, class _InputIter2, class _OutputIter>
-_OutputIter merge(_InputIter1 __first1, _InputIter1 __last1,
-                  _InputIter2 __first2, _InputIter2 __last2,
-                  _OutputIter __result) {
+_OutputIter merge(_InputIter1 __first1, _InputIter1 __last1, _InputIter2 __first2, _InputIter2 __last2, _OutputIter __result) 
+{
   __STL_REQUIRES(_InputIter1, _InputIterator);
   __STL_REQUIRES(_InputIter2, _InputIterator);
   __STL_REQUIRES(_OutputIter, _OutputIterator);
-  __STL_REQUIRES_SAME_TYPE(
-          typename iterator_traits<_InputIter1>::value_type,
-          typename iterator_traits<_InputIter2>::value_type);
-  __STL_REQUIRES(typename iterator_traits<_InputIter1>::value_type,
-                 _LessThanComparable);
-  while (__first1 != __last1 && __first2 != __last2) {
-    if (*__first2 < *__first1) {
+  __STL_REQUIRES_SAME_TYPE(typename iterator_traits<_InputIter1>::value_type, typename iterator_traits<_InputIter2>::value_type);
+  __STL_REQUIRES(typename iterator_traits<_InputIter1>::value_type, _LessThanComparable);
+  while (__first1 != __last1 && __first2 != __last2) 
+  {
+    if (*__first2 < *__first1) 
+    {
       *__result = *__first2;
       ++__first2;
     }
-    else {
+    else 
+    {
       *__result = *__first1;
       ++__first1;
     }
     ++__result;
   }
+  // 最后剩下元素以copy复制到目的端。以下两个序列一定至少有一个为空。
   return copy(__first2, __last2, copy(__first1, __last1, __result));
 }
 
-template <class _InputIter1, class _InputIter2, class _OutputIter,
-          class _Compare>
-_OutputIter merge(_InputIter1 __first1, _InputIter1 __last1,
-                  _InputIter2 __first2, _InputIter2 __last2,
-                  _OutputIter __result, _Compare __comp) {
+template <class _InputIter1, class _InputIter2, class _OutputIter, class _Compare>
+_OutputIter merge(_InputIter1 __first1, _InputIter1 __last1, _InputIter2 __first2, _InputIter2 __last2, _OutputIter __result, _Compare __comp) 
+{
   __STL_REQUIRES(_InputIter1, _InputIterator);
   __STL_REQUIRES(_InputIter2, _InputIterator);
-  __STL_REQUIRES_SAME_TYPE(
-          typename iterator_traits<_InputIter1>::value_type,
-          typename iterator_traits<_InputIter2>::value_type);
+  __STL_REQUIRES_SAME_TYPE(typename iterator_traits<_InputIter1>::value_type, typename iterator_traits<_InputIter2>::value_type);
   __STL_REQUIRES(_OutputIter, _OutputIterator);
-  __STL_BINARY_FUNCTION_CHECK(_Compare, bool,
-          typename iterator_traits<_InputIter1>::value_type,
-          typename iterator_traits<_InputIter1>::value_type);
-  while (__first1 != __last1 && __first2 != __last2) {
-    if (__comp(*__first2, *__first1)) {
+  __STL_BINARY_FUNCTION_CHECK(_Compare, bool, typename iterator_traits<_InputIter1>::value_type, typename iterator_traits<_InputIter1>::value_type);
+  while (__first1 != __last1 && __first2 != __last2) 
+  {
+    if (__comp(*__first2, *__first1)) 
+    {
       *__result = *__first2;
       ++__first2;
     }
-    else {
+    else 
+    {
       *__result = *__first1;
       ++__first1;
     }
@@ -2526,16 +2594,17 @@ inline void inplace_merge(_BidirectionalIter __first,
 // that their input ranges are sorted and the postcondition that their output
 // ranges are sorted.
 
+// 判断是否序列二S2的每一个元素都在S1中出现。
+// 注意，S1或S2内的元素都可以重复，
+// 这种情况下所谓“S1 内含一个S2子集合”的定义是：假设某元素在S2出现n次，在S1出现m次，那么如果m < n，次算法会返回false。
+// 序列一和序列二都是sorted range
 template <class _InputIter1, class _InputIter2>
-bool includes(_InputIter1 __first1, _InputIter1 __last1,
-              _InputIter2 __first2, _InputIter2 __last2) {
+bool includes(_InputIter1 __first1, _InputIter1 __last1, _InputIter2 __first2, _InputIter2 __last2) 
+{
   __STL_REQUIRES(_InputIter1, _InputIterator);
   __STL_REQUIRES(_InputIter2, _InputIterator);
-  __STL_REQUIRES_SAME_TYPE(
-       typename iterator_traits<_InputIter1>::value_type,
-       typename iterator_traits<_InputIter2>::value_type);
-  __STL_REQUIRES(typename iterator_traits<_InputIter1>::value_type,
-                 _LessThanComparable);
+  __STL_REQUIRES_SAME_TYPE(typename iterator_traits<_InputIter1>::value_type, typename iterator_traits<_InputIter2>::value_type);
+  __STL_REQUIRES(typename iterator_traits<_InputIter1>::value_type, _LessThanComparable);
   while (__first1 != __last1 && __first2 != __last2)
     if (*__first2 < *__first1)
       return false;
@@ -2547,17 +2616,14 @@ bool includes(_InputIter1 __first1, _InputIter1 __last1,
   return __first2 == __last2;
 }
 
+// 版本二。判断序列一内是否有个子序列（不一定连续），其与序列二的每个对应元素都满足二元运算compare
 template <class _InputIter1, class _InputIter2, class _Compare>
-bool includes(_InputIter1 __first1, _InputIter1 __last1,
-              _InputIter2 __first2, _InputIter2 __last2, _Compare __comp) {
+bool includes(_InputIter1 __first1, _InputIter1 __last1, _InputIter2 __first2, _InputIter2 __last2, _Compare __comp) 
+{
   __STL_REQUIRES(_InputIter1, _InputIterator);
   __STL_REQUIRES(_InputIter2, _InputIterator);
-  __STL_REQUIRES_SAME_TYPE(
-       typename iterator_traits<_InputIter1>::value_type,
-       typename iterator_traits<_InputIter2>::value_type);
-  __STL_BINARY_FUNCTION_CHECK(_Compare, bool,
-       typename iterator_traits<_InputIter1>::value_type,
-       typename iterator_traits<_InputIter2>::value_type);
+  __STL_REQUIRES_SAME_TYPE( typename iterator_traits<_InputIter1>::value_type, typename iterator_traits<_InputIter2>::value_type);
+  __STL_BINARY_FUNCTION_CHECK(_Compare, bool, typename iterator_traits<_InputIter1>::value_type, typename iterator_traits<_InputIter2>::value_type);
   while (__first1 != __last1 && __first2 != __last2)
     if (__comp(*__first2, *__first1))
       return false;
@@ -2569,37 +2635,47 @@ bool includes(_InputIter1 __first1, _InputIter1 __last1,
   return __first2 == __last2;
 }
 
+/*
+// 算法set_union可构造S1、S2的并集。也就是说，它能构造出集合S1 ∪ S2，此集合中含有S1或S2内的每一个元素。
+// 返回值为一个迭代器，指向输出区间的尾端。
+// 由于S1和S2内的元素都不需要唯一，因此，如果某个值在S1出现n次，在S2出现m次，那么该值在输出区间中会出现max(m, n)次。
+// set_union是一种稳定(stable)操作，意思是输入区间的每个元素的相对顺序都不会改变。
+// set是一种sorted range。这是以下算法的前提。
+*/
+// 版本一使用operator<进行比较
 template <class _InputIter1, class _InputIter2, class _OutputIter>
-_OutputIter set_union(_InputIter1 __first1, _InputIter1 __last1,
-                      _InputIter2 __first2, _InputIter2 __last2,
-                      _OutputIter __result) {
+_OutputIter set_union(_InputIter1 __first1, _InputIter1 __last1, _InputIter2 __first2, _InputIter2 __last2, _OutputIter __result) 
+{
   __STL_REQUIRES(_InputIter1, _InputIterator);
   __STL_REQUIRES(_InputIter2, _InputIterator);
   __STL_REQUIRES(_OutputIter, _OutputIterator);
-  __STL_REQUIRES_SAME_TYPE(
-       typename iterator_traits<_InputIter1>::value_type,
-       typename iterator_traits<_InputIter2>::value_type);
-  __STL_REQUIRES(typename iterator_traits<_InputIter1>::value_type,
-                 _LessThanComparable);
-  while (__first1 != __last1 && __first2 != __last2) {
-    if (*__first1 < *__first2) {
+  __STL_REQUIRES_SAME_TYPE( typename iterator_traits<_InputIter1>::value_type, typename iterator_traits<_InputIter2>::value_type);
+  __STL_REQUIRES(typename iterator_traits<_InputIter1>::value_type, _LessThanComparable);
+  while (__first1 != __last1 && __first2 != __last2) 
+  {
+    if (*__first1 < *__first2) 
+    {
       *__result = *__first1;
       ++__first1;
     }
-    else if (*__first2 < *__first1) {
+    else if (*__first2 < *__first1) 
+    {
       *__result = *__first2;
       ++__first2;
     }
-    else {
+    else 
+    {
       *__result = *__first1;
       ++__first1;
       ++__first2;
     }
     ++__result;
   }
+  // 将尚未到达尾端的区间的所有剩余元素拷贝到目的端，[first1, last1),[first2, last2)。
   return copy(__first2, __last2, copy(__first1, __last1, __result));
 }
 
+// 版本二使用_Compare进行比较
 template <class _InputIter1, class _InputIter2, class _OutputIter,
           class _Compare>
 _OutputIter set_union(_InputIter1 __first1, _InputIter1 __last1,
@@ -2633,24 +2709,28 @@ _OutputIter set_union(_InputIter1 __first1, _InputIter1 __last1,
   return copy(__first2, __last2, copy(__first1, __last1, __result));
 }
 
+/*
+// 算法set_intersection可构造S1、S2的交集。也就是说，它能构造出集合S1 ∩ S2，此集合中含有同时出现于S1和S2内的每一个元素。
+// 返回值为一个迭代器，指向输出区间的尾端。
+// 由于S1和S2内的元素都不需要唯一，因此，如果某个值在S1出现n次，在S2出现m次，那么该值在输出区间中会出现min(m, n)次。
+// set_intersection是一种稳定(stable)操作，意思是输入区间的每个元素的相对顺序都不会改变。
+// set是一种sorted range。这是以下算法的前提。
+*/
+// 版本一使用operator<进行比较
 template <class _InputIter1, class _InputIter2, class _OutputIter>
-_OutputIter set_intersection(_InputIter1 __first1, _InputIter1 __last1,
-                             _InputIter2 __first2, _InputIter2 __last2,
-                             _OutputIter __result) {
+_OutputIter set_intersection(_InputIter1 __first1, _InputIter1 __last1, _InputIter2 __first2, _InputIter2 __last2, _OutputIter __result) {
   __STL_REQUIRES(_InputIter1, _InputIterator);
   __STL_REQUIRES(_InputIter2, _InputIterator);
   __STL_REQUIRES(_OutputIter, _OutputIterator);
-  __STL_REQUIRES_SAME_TYPE(
-       typename iterator_traits<_InputIter1>::value_type,
-       typename iterator_traits<_InputIter2>::value_type);
-  __STL_REQUIRES(typename iterator_traits<_InputIter1>::value_type,
-                 _LessThanComparable);
+  __STL_REQUIRES_SAME_TYPE(typename iterator_traits<_InputIter1>::value_type, typename iterator_traits<_InputIter2>::value_type);
+  __STL_REQUIRES(typename iterator_traits<_InputIter1>::value_type, _LessThanComparable);
   while (__first1 != __last1 && __first2 != __last2) 
     if (*__first1 < *__first2) 
       ++__first1;
     else if (*__first2 < *__first1) 
       ++__first2;
-    else {
+    else 
+    {
       *__result = *__first1;
       ++__first1;
       ++__first2;
@@ -2659,6 +2739,7 @@ _OutputIter set_intersection(_InputIter1 __first1, _InputIter1 __last1,
   return __result;
 }
 
+// 版本二使用_Compare进行比较
 template <class _InputIter1, class _InputIter2, class _OutputIter,
           class _Compare>
 _OutputIter set_intersection(_InputIter1 __first1, _InputIter1 __last1,
@@ -2688,33 +2769,39 @@ _OutputIter set_intersection(_InputIter1 __first1, _InputIter1 __last1,
   return __result;
 }
 
+/*
+// 算法set_difference可构造S1、S2的差集。也就是说，它能构造出集合S1 - S2，此集合中含有出现于S1但不出现于S2的每一个元素。
+// 返回值为一个迭代器，指向输出区间的尾端。
+// 由于S1和S2内的元素都不需要唯一，因此，如果某个值在S1出现n次，在S2出现m次，那么该值在输出区间中会出现max(n - m, 0)次。
+// set_difference是一种稳定(stable)操作，意思是输入区间的每个元素的相对顺序都不会改变。
+// set是一种sorted range。这是以下算法的前提。
+*/
+// 版本一使用operator<进行比较
 template <class _InputIter1, class _InputIter2, class _OutputIter>
-_OutputIter set_difference(_InputIter1 __first1, _InputIter1 __last1,
-                           _InputIter2 __first2, _InputIter2 __last2,
-                           _OutputIter __result) {
+_OutputIter set_difference(_InputIter1 __first1, _InputIter1 __last1, _InputIter2 __first2, _InputIter2 __last2, _OutputIter __result) {
   __STL_REQUIRES(_InputIter1, _InputIterator);
   __STL_REQUIRES(_InputIter2, _InputIterator);
   __STL_REQUIRES(_OutputIter, _OutputIterator);
-  __STL_REQUIRES_SAME_TYPE(
-       typename iterator_traits<_InputIter1>::value_type,
-       typename iterator_traits<_InputIter2>::value_type);
-  __STL_REQUIRES(typename iterator_traits<_InputIter1>::value_type,
-                 _LessThanComparable);
+  __STL_REQUIRES_SAME_TYPE(typename iterator_traits<_InputIter1>::value_type, typename iterator_traits<_InputIter2>::value_type);
+  __STL_REQUIRES(typename iterator_traits<_InputIter1>::value_type, _LessThanComparable);
   while (__first1 != __last1 && __first2 != __last2)
-    if (*__first1 < *__first2) {
+    if (*__first1 < *__first2) 
+    {
       *__result = *__first1;
       ++__first1;
       ++__result;
     }
     else if (*__first2 < *__first1)
       ++__first2;
-    else {
+    else 
+    {
       ++__first1;
       ++__first2;
     }
   return copy(__first1, __last1, __result);
 }
 
+// 版本二使用_Compare进行比较
 template <class _InputIter1, class _InputIter2, class _OutputIter, 
           class _Compare>
 _OutputIter set_difference(_InputIter1 __first1, _InputIter1 __last1,
@@ -2745,37 +2832,44 @@ _OutputIter set_difference(_InputIter1 __first1, _InputIter1 __last1,
   return copy(__first1, __last1, __result);
 }
 
+/*
+// 算法set_symmetric_difference可构造S1、S2的对称差集。也就是说，它能构造出集合(S1 - S2) ∪ (S2 - S1)，此集合中含有出现于S1但不出现于S2的每一个元素以及出现于S2但不出现于S1的每一个元素。
+// 返回值为一个迭代器，指向输出区间的尾端。
+// 由于S1和S2内的元素都不需要唯一，因此，如果某个值在S1出现n次，在S2出现m次，那么该值在输出区间中会出现|n - m|次。
+// set_symmetric_difference是一种稳定(stable)操作，意思是输入区间的每个元素的相对顺序都不会改变。
+// set是一种sorted range。这是以下算法的前提。
+*/
+// 版本一使用operator<进行比较
 template <class _InputIter1, class _InputIter2, class _OutputIter>
-_OutputIter 
-set_symmetric_difference(_InputIter1 __first1, _InputIter1 __last1,
-                         _InputIter2 __first2, _InputIter2 __last2,
-                         _OutputIter __result) {
+_OutputIter set_symmetric_difference(_InputIter1 __first1, _InputIter1 __last1, _InputIter2 __first2, _InputIter2 __last2, _OutputIter __result) 
+{
   __STL_REQUIRES(_InputIter1, _InputIterator);
   __STL_REQUIRES(_InputIter2, _InputIterator);
   __STL_REQUIRES(_OutputIter, _OutputIterator);
-  __STL_REQUIRES_SAME_TYPE(
-       typename iterator_traits<_InputIter1>::value_type,
-       typename iterator_traits<_InputIter2>::value_type);
-  __STL_REQUIRES(typename iterator_traits<_InputIter1>::value_type,
-                 _LessThanComparable);
+  __STL_REQUIRES_SAME_TYPE(typename iterator_traits<_InputIter1>::value_type, typename iterator_traits<_InputIter2>::value_type);
+  __STL_REQUIRES(typename iterator_traits<_InputIter1>::value_type, _LessThanComparable);
   while (__first1 != __last1 && __first2 != __last2)
-    if (*__first1 < *__first2) {
+    if (*__first1 < *__first2) 
+    {
       *__result = *__first1;
       ++__first1;
       ++__result;
     }
-    else if (*__first2 < *__first1) {
+    else if (*__first2 < *__first1) 
+    {
       *__result = *__first2;
       ++__first2;
       ++__result;
     }
-    else {
+    else 
+    {
       ++__first1;
       ++__first2;
     }
   return copy(__first2, __last2, copy(__first1, __last1, __result));
 }
 
+// 版本二使用_Compare进行比较
 template <class _InputIter1, class _InputIter2, class _OutputIter,
           class _Compare>
 _OutputIter 
@@ -2813,12 +2907,14 @@ set_symmetric_difference(_InputIter1 __first1, _InputIter1 __last1,
 // min_element and max_element, with and without an explicitly supplied
 // comparison function.
 
+// 返回一个迭代器，指向序列之中数值最大的元素
 template <class _ForwardIter>
-_ForwardIter max_element(_ForwardIter __first, _ForwardIter __last) {
+_ForwardIter max_element(_ForwardIter __first, _ForwardIter __last) 
+{
   __STL_REQUIRES(_ForwardIter, _ForwardIterator);
-  __STL_REQUIRES(typename iterator_traits<_ForwardIter>::value_type,
-                 _LessThanComparable);
-  if (__first == __last) return __first;
+  __STL_REQUIRES(typename iterator_traits<_ForwardIter>::value_type, _LessThanComparable);
+  if (__first == __last) 
+    return __first;
   _ForwardIter __result = __first;
   while (++__first != __last) 
     if (*__result < *__first)
@@ -2827,24 +2923,24 @@ _ForwardIter max_element(_ForwardIter __first, _ForwardIter __last) {
 }
 
 template <class _ForwardIter, class _Compare>
-_ForwardIter max_element(_ForwardIter __first, _ForwardIter __last,
-			 _Compare __comp) {
+_ForwardIter max_element(_ForwardIter __first, _ForwardIter __last, _Compare __comp) 
+{
   __STL_REQUIRES(_ForwardIter, _ForwardIterator);
-  __STL_BINARY_FUNCTION_CHECK(_Compare, bool,
-    typename iterator_traits<_ForwardIter>::value_type,
-    typename iterator_traits<_ForwardIter>::value_type);
+  __STL_BINARY_FUNCTION_CHECK(_Compare, bool, typename iterator_traits<_ForwardIter>::value_type, typename iterator_traits<_ForwardIter>::value_type);
   if (__first == __last) return __first;
   _ForwardIter __result = __first;
   while (++__first != __last) 
-    if (__comp(*__result, *__first)) __result = __first;
+    if (__comp(*__result, *__first)) 
+      __result = __first;
   return __result;
 }
 
+// 返回一个迭代器，指向序列之中数值最小的元素
 template <class _ForwardIter>
-_ForwardIter min_element(_ForwardIter __first, _ForwardIter __last) {
+_ForwardIter min_element(_ForwardIter __first, _ForwardIter __last) 
+{
   __STL_REQUIRES(_ForwardIter, _ForwardIterator);
-  __STL_REQUIRES(typename iterator_traits<_ForwardIter>::value_type,
-                 _LessThanComparable);
+  __STL_REQUIRES(typename iterator_traits<_ForwardIter>::value_type, _LessThanComparable);
   if (__first == __last) return __first;
   _ForwardIter __result = __first;
   while (++__first != __last) 
@@ -2854,12 +2950,10 @@ _ForwardIter min_element(_ForwardIter __first, _ForwardIter __last) {
 }
 
 template <class _ForwardIter, class _Compare>
-_ForwardIter min_element(_ForwardIter __first, _ForwardIter __last,
-			 _Compare __comp) {
+_ForwardIter min_element(_ForwardIter __first, _ForwardIter __last, _Compare __comp) 
+{
   __STL_REQUIRES(_ForwardIter, _ForwardIterator);
-  __STL_BINARY_FUNCTION_CHECK(_Compare, bool,
-    typename iterator_traits<_ForwardIter>::value_type,
-    typename iterator_traits<_ForwardIter>::value_type);
+  __STL_BINARY_FUNCTION_CHECK(_Compare, bool, typename iterator_traits<_ForwardIter>::value_type, typename iterator_traits<_ForwardIter>::value_type);
   if (__first == __last) return __first;
   _ForwardIter __result = __first;
   while (++__first != __last) 
@@ -3005,15 +3099,15 @@ bool prev_permutation(_BidirectionalIter __first, _BidirectionalIter __last,
 
 // find_first_of, with and without an explicitly supplied comparison function.
 
+// 在序列一中寻找序列二中任意一个元素首次出现于序列一的位置
+// 如果第一序列并未内含第二序列的任何元素，返回的将是last1
+// 版本一使用元素型别提供的equality操作符。
 template <class _InputIter, class _ForwardIter>
-_InputIter find_first_of(_InputIter __first1, _InputIter __last1,
-                         _ForwardIter __first2, _ForwardIter __last2)
+_InputIter find_first_of(_InputIter __first1, _InputIter __last1, _ForwardIter __first2, _ForwardIter __last2)
 {
   __STL_REQUIRES(_InputIter, _InputIterator);
   __STL_REQUIRES(_ForwardIter, _ForwardIterator);
-  __STL_REQUIRES_BINARY_OP(_OP_EQUAL, bool, 
-     typename iterator_traits<_InputIter>::value_type,
-     typename iterator_traits<_ForwardIter>::value_type);
+  __STL_REQUIRES_BINARY_OP(_OP_EQUAL, bool, typename iterator_traits<_InputIter>::value_type, typename iterator_traits<_ForwardIter>::value_type);
 
   for ( ; __first1 != __last1; ++__first1) 
     for (_ForwardIter __iter = __first2; __iter != __last2; ++__iter)
@@ -3022,6 +3116,7 @@ _InputIter find_first_of(_InputIter __first1, _InputIter __last1,
   return __last1;
 }
 
+// 版本二允许用户指定一个二元运算pred。
 template <class _InputIter, class _ForwardIter, class _BinaryPredicate>
 _InputIter find_first_of(_InputIter __first1, _InputIter __last1,
                          _ForwardIter __first2, _ForwardIter __last2,
@@ -3047,21 +3142,26 @@ _InputIter find_first_of(_InputIter __first1, _InputIter __last1,
 // is much faster than for forward iterators.
 
 // find_end for forward iterators. 
+// forward iterator版
 template <class _ForwardIter1, class _ForwardIter2>
-_ForwardIter1 __find_end(_ForwardIter1 __first1, _ForwardIter1 __last1,
-                         _ForwardIter2 __first2, _ForwardIter2 __last2,
-                         forward_iterator_tag, forward_iterator_tag)
+_ForwardIter1 __find_end(_ForwardIter1 __first1, _ForwardIter1 __last1, _ForwardIter2 __first2, _ForwardIter2 __last2, forward_iterator_tag, forward_iterator_tag)
 {
+  // 如果查找目标是空的，返回last1，表示该“空子序列”的最后出现点。
   if (__first2 == __last2)
     return __last1;
-  else {
+  else 
+  {
     _ForwardIter1 __result = __last1;
-    while (1) {
-      _ForwardIter1 __new_result
-        = search(__first1, __last1, __first2, __last2);
+    while (1) 
+    {
+      // 利用search()查找某个子序列的首次出现点。找不到的话返回last1。
+      _ForwardIter1 __new_result = search(__first1, __last1, __first2, __last2);
       if (__new_result == __last1)
         return __result;
-      else {
+      // 因为find_end()是查找最后一次出现地点，因此准备下一个查找行动
+      else 
+      {
+        // 在下一个查找行动开始之前记录已找到的位置
         __result = __new_result;
         __first1 = __new_result;
         ++__first1;
@@ -3098,26 +3198,28 @@ _ForwardIter1 __find_end(_ForwardIter1 __first1, _ForwardIter1 __last1,
 // find_end for bidirectional iterators.  Requires partial specialization.
 #ifdef __STL_CLASS_PARTIAL_SPECIALIZATION
 
+// bidirectional iterators版（可逆向查找）
 template <class _BidirectionalIter1, class _BidirectionalIter2>
-_BidirectionalIter1
-__find_end(_BidirectionalIter1 __first1, _BidirectionalIter1 __last1,
-           _BidirectionalIter2 __first2, _BidirectionalIter2 __last2,
-           bidirectional_iterator_tag, bidirectional_iterator_tag)
+_BidirectionalIter1 __find_end(_BidirectionalIter1 __first1, _BidirectionalIter1 __last1, _BidirectionalIter2 __first2, _BidirectionalIter2 __last2, bidirectional_iterator_tag, bidirectional_iterator_tag)
 {
   __STL_REQUIRES(_BidirectionalIter1, _BidirectionalIterator);
   __STL_REQUIRES(_BidirectionalIter2, _BidirectionalIterator);
+  // 由于查找的是“最后出现地点”，因此反向查找比较快，利用reverse_iterator。
   typedef reverse_iterator<_BidirectionalIter1> _RevIter1;
   typedef reverse_iterator<_BidirectionalIter2> _RevIter2;
 
   _RevIter1 __rlast1(__first1);
   _RevIter2 __rlast2(__first2);
-  _RevIter1 __rresult = search(_RevIter1(__last1), __rlast1,
-                               _RevIter2(__last2), __rlast2);
+  // 查找时，将序列一和序列二统统逆转方向。
+  _RevIter1 __rresult = search(_RevIter1(__last1), __rlast1, _RevIter2(__last2), __rlast2);
 
   if (__rresult == __rlast1)
     return __last1;
-  else {
+  else 
+  {
+    // 转回正常（非逆向迭代器）
     _BidirectionalIter1 __result = __rresult.base();
+    // 调整回到子序列的起头处
     advance(__result, -distance(__first2, __last2));
     return __result;
   }
@@ -3154,19 +3256,22 @@ __find_end(_BidirectionalIter1 __first1, _BidirectionalIter1 __last1,
 
 // Dispatching functions for find_end.
 
+/*
+// 在序列一[first1, last1)所涵盖的区间中，查找序列二[first2, last2)的最后一次出现点。
+// 如果序列一之内不存在“完全匹配序列二”的子序列，便返回迭代器last1。
+*/
+// 逆向查找的关键在于迭代器的双向移动能力，因此，SGI将算法设计为双层架构，
+// 一般称呼此种上层函数为dispatch function（分派函数、派送函数）。
 template <class _ForwardIter1, class _ForwardIter2>
-inline _ForwardIter1 
-find_end(_ForwardIter1 __first1, _ForwardIter1 __last1, 
-         _ForwardIter2 __first2, _ForwardIter2 __last2)
+inline _ForwardIter1 find_end(_ForwardIter1 __first1, _ForwardIter1 __last1, _ForwardIter2 __first2, _ForwardIter2 __last2)
 {
   __STL_REQUIRES(_ForwardIter1, _ForwardIterator);
   __STL_REQUIRES(_ForwardIter2, _ForwardIterator);
-  __STL_REQUIRES_BINARY_OP(_OP_EQUAL, bool,
-   typename iterator_traits<_ForwardIter1>::value_type,
-   typename iterator_traits<_ForwardIter2>::value_type);
-  return __find_end(__first1, __last1, __first2, __last2,
-                    __ITERATOR_CATEGORY(__first1),
-                    __ITERATOR_CATEGORY(__first2));
+  __STL_REQUIRES_BINARY_OP(_OP_EQUAL, bool, typename iterator_traits<_ForwardIter1>::value_type, typename iterator_traits<_ForwardIter2>::value_type);
+  // 根据两个区间的类属，调用不同的下层函数。
+  // 这是一种很常见的技巧，令函数传递调用过程中产生迭代器类型(iterator category)的临时对象，
+  // 再利用编译器的推导机制(argument deduction)，自动调用某个对应的函数。此例中对应函数有两个候选者。
+  return __find_end(__first1, __last1, __first2, __last2, __ITERATOR_CATEGORY(__first1), __ITERATOR_CATEGORY(__first2));
 }
 
 template <class _ForwardIter1, class _ForwardIter2, 
