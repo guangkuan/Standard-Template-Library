@@ -126,7 +126,8 @@ void __adjust_heap(_RandomAccessIterator __first, _Distance __holeIndex, _Distan
     //找出新洞节点的右子节点。
     __secondChild = 2 * (__secondChild + 1);
   }
-  //割舍了最下层最右边的叶结点，因此当__secondChild == __len时说明，下层还存在且只有一个左子节点能上浮。
+  // 割舍了最下层最右边的叶结点（右子节点已经替代成了first，*result = *first），当secondChild == len时说明到达了最后一层，如果!=len，说明可能是倒数第二层
+  // 因此当__secondChild == __len时说明，下层还存在且只有一个左子节点能上浮。
   if (__secondChild == __len) 
   {
     *(__first + __holeIndex) = *(__first + (__secondChild - 1));
