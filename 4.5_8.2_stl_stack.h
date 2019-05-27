@@ -37,6 +37,7 @@ __STL_BEGIN_NAMESPACE
 
 // Forward declarations of operators == and <, needed for friend declaration.
 
+// 改变容器接口者，我们称为container adapter
 //默认用deque作底部容器
 template <class _Tp, class _Sequence __STL_DEPENDENT_DEFAULT_TMPL(deque<_Tp>) > class stack;
 
