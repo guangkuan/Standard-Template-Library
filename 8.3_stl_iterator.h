@@ -832,6 +832,12 @@ private:
 
 #else /* __STL_USE_NEW_IOSTREAMS */
 
+/*
+// 所谓stream iterators，可以将迭代器绑定到一个stream（数据流）对象身上，绑定到istream对象（例如std::cin）者，
+// 称为istream_iterator，拥有输入能力；绑定到ostream对象（例如std::cout）者，称为ostream_iterator，拥有输出能力；
+// 所谓绑定一个istream object，其实就是在istream iterator内部维护一个istream member，客户端对于这个迭代器所做的operator++操作，
+// 会被导引调用迭代器内部所含的那个istream member的输入操作(operator>>)。这个迭代器是个input iterator，不具备operator--。
+*/
 template <class _Tp, class _Dist = ptrdiff_t> class istream_iterator;
 
 template <class _Tp, class _Dist>
