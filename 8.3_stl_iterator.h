@@ -33,10 +33,12 @@
 
 __STL_BEGIN_NAMESPACE
 
-
+// 这是一个迭代器配接器(iterator adapter)，用来将某个迭代器的赋值(assign)
+// 操作修改为插入(insert)操作——从容器的尾端插入进去（所以称为back_insert）
 template <class _Container>
 class back_insert_iterator {
 protected:
+  // 底层容器
   _Container* container;
 public:
   typedef _Container          container_type;
