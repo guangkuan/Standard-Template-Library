@@ -180,11 +180,17 @@ not1(const _Predicate& __pred)
   return unary_negate<_Predicate>(__pred);
 }
 
+/*
+// 8.4 function adapters
+// 每一个function adapters也内藏了一个member object，其型别等同于它所要配接的对象
+// （那个对象当然是一个“可配接的仿函数”，adaptable functor）
+// 当function adapter有了完全属于自己的一份修饰对象（的副本）在手，
+// 它就成了该修饰对象（副本）的主人，也就有资格调用该修饰对象（一个仿函数），并在参数和返回值上面动手脚了。
+*/
+// 以下配接器用来表示某个adaptable binary predicate的逻辑负值。
 template <class _Predicate> 
-class binary_negate 
-  : public binary_function<typename _Predicate::first_argument_type,
-                           typename _Predicate::second_argument_type,
-                           bool> {
+class binary_negate : public binary_function<typename _Predicate::first_argument_type, typename _Predicate::second_argument_type, bool> 
+{
 protected:
   _Predicate _M_pred;
 public:
@@ -203,6 +209,7 @@ not2(const _Predicate& __pred)
   return binary_negate<_Predicate>(__pred);
 }
 
+// 以下配接器用来将某个adaptable binary function转换为unary function。
 template <class _Operation> 
 class binder1st
   : public unary_function<typename _Operation::second_argument_type,
@@ -255,6 +262,7 @@ bind2nd(const _Operation& __fn, const _Tp& __x)
 
 // unary_compose and binary_compose (extensions, not part of the standard).
 
+// 已知两个adaptable unary functions f()，g()，一下配接器用来产生一个h()，使h(x) = f(g(x))。
 template <class _Operation1, class _Operation2>
 class unary_compose
   : public unary_function<typename _Operation2::argument_type,
@@ -306,6 +314,12 @@ compose2(const _Operation1& __fn1, const _Operation2& __fn2,
     (__fn1, __fn2, __fn3);
 }
 
+// 这种配接器使我们能够将一般函数当作仿函数使用。
+// 一般函数当作仿函数传递给STL算法，就语言层面本来就是可以的，就好像原声指针可当作迭代器传给STL算法那样。
+// 但如果你不使用这里所说的两个配接器先做一番包装，你所使用的那个一般函数将无配接能力，
+// 也就无法和前数小节介绍过的其它配接器接轨。
+
+// 以下配接器起始就是把一个一元函数指针包起来。
 template <class _Arg, class _Result>
 class pointer_to_unary_function : public unary_function<_Arg, _Result> {
 protected:
@@ -322,6 +336,7 @@ inline pointer_to_unary_function<_Arg, _Result> ptr_fun(_Result (*__x)(_Arg))
   return pointer_to_unary_function<_Arg, _Result>(__x);
 }
 
+// 以下配接器起始就是把一个二元函数指针包起来。
 template <class _Arg1, class _Arg2, class _Result>
 class pointer_to_binary_function : 
   public binary_function<_Arg1,_Arg2,_Result> {
@@ -686,6 +701,8 @@ private:
 //  are provided for backward compatibility, but they are no longer
 //  part of the C++ standard.)
 
+// 这种配接器使我们能够将成员函数(member functions)当作仿函数来使用，于是成员函数可以搭配各种泛型算法。
+// 当容器的元素型式是X&或X*，而我们又以虚拟(virtual)成员函数作为仿函数，便可以藉由泛型算法完成所谓的多态调用(polymorphic function call)
 template <class _Ret, class _Tp>
 inline mem_fun_t<_Ret,_Tp> mem_fun(_Ret (_Tp::*__f)())
   { return mem_fun_t<_Ret,_Tp>(__f); }
