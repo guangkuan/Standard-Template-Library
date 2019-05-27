@@ -32,13 +32,30 @@
 #define __SGI_STL_INTERNAL_FUNCTION_H
 
 __STL_BEGIN_NAMESPACE
+/*
+// 仿函数(functors)也名函数对象(function objects)
+// 要将某种“操作”当作算法的参数，唯一办法就是先将该“操作”（可能拥有数条以上的指令）设计为一个函数，
+// 再将函数指针当作算法的一个参数；或是将该“操作”设计为一个所谓的仿函数（就语言层面是个class），
+// 再以该仿函数产生一个对象，并以此对象作为算法的一个参数。
+// 由于函数指针毕竟不能满足STL对抽象性的要求，也不能满足软件积木的要求——函数指针无法和STL其他组件（如配接器）搭配，产生更灵活的变化。
+//
+// 为了拥有配接能力，每一个仿函数必须定义自己的相应型别(associative types)，就像迭代器要融入整个STL大家庭，
+// 也必须要依照规定定义自己的5个相应型别一样。这些相应型别是为了让配接器能够取出，获得仿函数的某些信息。
+// 相应型别都只是一些typedef，所有必要操作在编译期就全完成了，对程序的执行效率没有任何影响，不打来任何额外负担。
+// 仿函数的相应型别主要用来表现函数参数型别和传回值型别。为了方便期间，定义了两个class分别代表一元仿函数和二元仿函数，
+// 其中没有任何data members或member functions，唯有一些型别定义。任何仿函数，只要依个人需求选择继承其中一个class，
+// 便自动拥有了那些相应型别，也就自动拥有了配接能力。
+*/
 
+// unary_function用来呈现一元函数的参数型别和返回值型别。
 template <class _Arg, class _Result>
 struct unary_function {
   typedef _Arg argument_type;
   typedef _Result result_type;
 };
 
+struct binary_function {
+// unary_function用来呈现二元函数的第一参数型别、第二参数型别和返回值型别。
 template <class _Arg1, class _Arg2, class _Result>
 struct binary_function {
   typedef _Arg1 first_argument_type;
@@ -46,6 +63,7 @@ struct binary_function {
   typedef _Result result_type;
 };      
 
+// 算数类仿函数
 template <class _Tp>
 struct plus : public binary_function<_Tp,_Tp,_Tp> {
   _Tp operator()(const _Tp& __x, const _Tp& __y) const { return __x + __y; }
@@ -87,6 +105,7 @@ struct negate : public unary_function<_Tp,_Tp>
   _Tp operator()(const _Tp& __x) const { return -__x; }
 };
 
+// 关系运算类仿函数
 template <class _Tp>
 struct equal_to : public binary_function<_Tp,_Tp,bool> 
 {
@@ -123,6 +142,7 @@ struct less_equal : public binary_function<_Tp,_Tp,bool>
   bool operator()(const _Tp& __x, const _Tp& __y) const { return __x <= __y; }
 };
 
+// 逻辑运算类仿函数
 template <class _Tp>
 struct logical_and : public binary_function<_Tp,_Tp,bool>
 {
