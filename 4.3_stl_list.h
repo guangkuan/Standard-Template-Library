@@ -33,7 +33,7 @@
 
 #include <concept_checks.h>
 
-__STL_BEGIN_NAMESPACE
+// __STL_BEGIN_NAMESPACE
 
 #if defined(__sgi) && !defined(__GNUC__) && (_MIPS_SIM != _MIPS_SIM_ABI32)
 #pragma set woff 1174
@@ -513,6 +513,14 @@ public:
 
 protected:
   //transfer不是公开接口，splice、merge、reverse、sort是。
+  /*
+  
+  position->prev      first       last->prev    last->prev    position     first->prev        last
+      next            prev         next            next        prev          next             prev
+        |               |            |               |          |             |                |
+      first       position->prev  position        postion    last->prev      last          first->prev
+  
+  */
   void transfer(iterator __position, iterator __first, iterator __last) 
   {
     if (__position != __last) 
@@ -821,10 +829,12 @@ void list<_Tp, _Alloc>::sort()
     {
       //void splice(iterator __position, list&, iterator __i) 
       //每次取list首位，用merge进行排序，把当前首位排到合适位置，然后把merge后的list存入counter数组的下一位
+      //取list首位(begin()),插到__carry.begin()前,spclice中插入的节点会从第二个链表中删除
       __carry.splice(__carry.begin(), *this, begin());
       int __i = 0;
       while(__i < __fill && !__counter[__i].empty()) 
       {
+        //merger后carry为nullptr
         __counter[__i].merge(__carry);
         __carry.swap(__counter[__i++]);
       }
@@ -836,7 +846,8 @@ void list<_Tp, _Alloc>::sort()
     for (int __i = 1; __i < __fill; ++__i)
       __counter[__i].merge(__counter[__i-1]);
     //__counter[__fill-1]是排好序的list
-    swap(__counter[__fill-1]);
+    
+    swap(__counter[__fill - 1]);
   }
 }
 

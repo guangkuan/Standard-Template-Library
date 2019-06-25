@@ -8,6 +8,13 @@
         "xstring": "cpp",
         "iosfwd": "cpp",
         "xutility": "cpp",
-        "utility": "cpp"
+        "utility": "cpp",
+        "ios": "cpp",
+        "istream": "cpp",
+        "ostream": "cpp",
+        "streambuf": "cpp",
+        "tuple": "cpp",
+        "xiosbase": "cpp",
+        "xmemory0": "cpp"
     }
 }

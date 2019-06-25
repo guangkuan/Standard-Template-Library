@@ -60,11 +60,10 @@ __slist_previous(const _Slist_node_base* __head,
   return __head;
 }
 
-inline void __slist_splice_after(_Slist_node_base* __pos,
-                                 _Slist_node_base* __before_first,
-                                 _Slist_node_base* __before_last)
+inline void __slist_splice_after(_Slist_node_base* __pos, _Slist_node_base* __before_first, _Slist_node_base* __before_last)
 {
-  if (__pos != __before_first && __pos != __before_last) {
+  if (__pos != __before_first && __pos != __before_last) 
+  {
     _Slist_node_base* __first = __before_first->_M_next;
     _Slist_node_base* __after = __pos->_M_next;
     __before_first->_M_next = __before_last->_M_next;
@@ -897,13 +896,14 @@ template <class _Tp, class _Alloc>
 void slist<_Tp,_Alloc>::merge(slist<_Tp,_Alloc>& __x)
 {
   _Node_base* __n1 = &this->_M_head;
-  while (__n1->_M_next && __x._M_head._M_next) {
-    if (((_Node*) __x._M_head._M_next)->_M_data < 
-        ((_Node*)       __n1->_M_next)->_M_data) 
+  while (__n1->_M_next && __x._M_head._M_next) 
+  {
+    if (((_Node*) __x._M_head._M_next)->_M_data < ((_Node*) __n1->_M_next)->_M_data) 
       __slist_splice_after(__n1, &__x._M_head, __x._M_head._M_next);
     __n1 = __n1->_M_next;
   }
-  if (__x._M_head._M_next) {
+  if (__x._M_head._M_next) 
+  {
     __n1->_M_next = __x._M_head._M_next;
     __x._M_head._M_next = 0;
   }
@@ -912,15 +912,18 @@ void slist<_Tp,_Alloc>::merge(slist<_Tp,_Alloc>& __x)
 template <class _Tp, class _Alloc>
 void slist<_Tp,_Alloc>::sort()
 {
-  if (this->_M_head._M_next && this->_M_head._M_next->_M_next) {
+  if (this->_M_head._M_next && this->_M_head._M_next->_M_next) 
+  {
     slist __carry;
     slist __counter[64];
     int __fill = 0;
-    while (!empty()) {
-      __slist_splice_after(&__carry._M_head,
-                           &this->_M_head, this->_M_head._M_next);
+    while (!empty()) 
+    {
+      //head->next才是单向链表的第一个节点，head是头部无实际值val
+      __slist_splice_after(&__carry._M_head, &this->_M_head, this->_M_head._M_next);
       int __i = 0;
-      while (__i < __fill && !__counter[__i].empty()) {
+      while (__i < __fill && !__counter[__i].empty()) 
+      {
         __counter[__i].merge(__carry);
         __carry.swap(__counter[__i]);
         ++__i;
